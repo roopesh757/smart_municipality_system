@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Municipality Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-inner">
+        <div class="navbar-brand">
+            <div class="emblem" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+            <div class="brand-text">
+                <span>Admin Dashboard</span>
+                <span id="nav-city-admin">Municipality Portal</span>
+            </div>
+        </div>
+        <div class="navbar-links">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">हिं</button>
+            </div>
+            <span id="nav-admin-name" style="color:rgba(255,255,255,0.85);font-size:0.88rem;"></span>
+            <button onclick="Auth.logout()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.8);border-color:rgba(255,255,255,0.3);">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-user">
+            <div class="sidebar-avatar" style="background:linear-gradient(135deg,#ef4444,#dc2626);" id="admin-avatar">A</div>
+            <div class="sidebar-user-name" id="admin-sidebar-name">Admin</div>
+            <div class="sidebar-user-role">🛡️ Administrator</div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="active" onclick="showAdminSection('overview',this)">
+                <span class="nav-icon">📊</span> Overview
+            </a>
+            <a href="#" onclick="showAdminSection('complaints',this)">
+                <span class="nav-icon">📋</span> All Complaints
+            </a>
+            <a href="#" onclick="showAdminSection('ward-view',this)">
+                <span class="nav-icon">🗺️</span> Ward View
+            </a>
+            <a href="#" onclick="showAdminSection('users',this)">
+                <span class="nav-icon">👥</span> City Users
+            </a>
+            <a href="#" onclick="showAdminSection('duplicates',this)">
+                <span class="nav-icon">⚡</span> Duplicates
+            </a>
+            <div class="sidebar-divider"></div>
+            <a href="login.html" onclick="Auth.logout();return false;">
+                <span class="nav-icon">🚪</span> Logout
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ── Overview ────────────────────────────────── -->
+        <section id="section-overview">
+            <div class="page-header">
+                <h2>City Overview</h2>
+                <p>Complaint management for <strong id="admin-city-display">your city</strong></p>
+            </div>
+
+            <div class="stats-grid" id="admin-stats-grid">
+                <div class="page-loader"><span class="loading-spinner dark"></span></div>
+            </div>
+
+            <!-- Ward Breakdown -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px;" class="overview-grids">
+                <div class="card">
+                    <div class="card-header"><h3>Ward-wise Summary</h3></div>
+                    <div id="ward-breakdown"><div class="page-loader"><span class="loading-spinner dark"></span></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>By Problem Type</h3></div>
+                    <div id="type-breakdown"><div class="page-loader"><span class="loading-spinner dark"></span></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── All Complaints ──────────────────────────── -->
+        <section id="section-complaints" style="display:none;">
+            <div class="page-header">
+                <h2>All Complaints</h2>
+                <p>Manage and update status for all complaints in your city.</p>
+            </div>
+            <div class="filter-bar">
+                <select id="af-status" class="form-control" onchange="loadAdminComplaints()">
+                    <option value="">All Status</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Solved">Solved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+                <select id="af-priority" class="form-control" onchange="loadAdminComplaints()">
+                    <option value="">All Priority</option>
+                    <option value="Urgent">🔴 Urgent</option>
+                    <option value="High">🟠 High</option>
+                    <option value="Medium">🟡 Medium</option>
+                    <option value="Low">🟢 Low</option>
+                </select>
+                <select id="af-sort" class="form-control" onchange="loadAdminComplaints()">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="priority">By Priority</option>
+                </select>
+            </div>
+            <div id="admin-complaints-list">
+                <div class="page-loader"><span class="loading-spinner dark"></span></div>
+            </div>
+        </section>
+
+        <!-- ── Ward View ───────────────────────────────── -->
+        <section id="section-ward-view" style="display:none;">
+            <div class="page-header">
+                <h2>Ward-wise Complaints</h2>
+                <p>Filter complaints by ward in your city.</p>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="ward-filter-input" class="form-control" placeholder="Enter ward name e.g. Ward-5" onkeyup="debounce(loadWardComplaints, 400)()">
+                <button class="btn btn-primary btn-sm" onclick="loadWardComplaints()">Filter</button>
+            </div>
+            <div id="ward-complaints-list">
+                <div class="empty-state">
+                    <div class="empty-icon">🗺️</div>
+                    <p>Enter a ward name to view complaints.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Users ───────────────────────────────────── -->
+        <section id="section-users" style="display:none;">
+            <div class="page-header">
+                <h2>City Users</h2>
+                <p>Citizens registered from your city.</p>
+            </div>
+            <div id="users-list">
+                <div class="page-loader"><span class="loading-spinner dark"></span></div>
+            </div>
+        </section>
+
+        <!-- ── Duplicates ──────────────────────────────── -->
+        <section id="section-duplicates" style="display:none;">
+            <div class="page-header">
+                <h2>Duplicate Complaints</h2>
+                <p>Complaints flagged as duplicates of existing reports.</p>
+            </div>
+            <div id="duplicates-list">
+                <div class="page-loader"><span class="loading-spinner dark"></span></div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Complaint Detail & Status Update Modal -->
+<div class="modal-overlay" id="admin-detail-modal">
+    <div class="modal" style="max-width:720px;">
+        <div class="modal-header">
+            <h3>Complaint Details</h3>
+            <button class="modal-close" onclick="closeModal('admin-detail-modal')">×</button>
+        </div>
+        <div class="modal-body" id="admin-detail-body">Loading...</div>
+        <div class="modal-footer" id="admin-detail-footer">
+            <button class="btn btn-outline" onclick="closeModal('admin-detail-modal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal-overlay" id="status-modal">
+    <div class="modal" style="max-width:440px;">
+        <div class="modal-header">
+            <h3>Update Complaint Status</h3>
+            <button class="modal-close" onclick="closeModal('status-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">New Status <span class="required">*</span></label>
+                <select id="new-status" class="form-control">
+                    <option value="Submitted">📋 Submitted</option>
+                    <option value="Pending">⏳ Pending</option>
+                    <option value="In Progress">🔧 In Progress</option>
+                    <option value="Solved">✅ Solved</option>
+                    <option value="Rejected">❌ Rejected</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Admin Note (Optional)</label>
+                <textarea id="admin-note" class="form-control" rows="3" placeholder="Add a note for the citizen..."></textarea>
+            </div>
+            <input type="hidden" id="update-complaint-id">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('status-modal')">Cancel</button>
+            <button class="btn btn-primary" id="update-status-btn" onclick="submitStatusUpdate()">Update Status</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script>
+// ─── Auth Guard ───────────────────────────────────────────────
+if (!Auth.requireAuth()) {}
+const role = Auth.getRole();
+if (role !== 'admin' && role !== 'superadmin') {
+    window.location.href = 'login.html?role=admin';
+}
+
+const admin = Auth.getUser();
+if (admin) {
+    document.getElementById('nav-admin-name').textContent = admin.username;
+    document.getElementById('nav-city-admin').textContent = `${admin.city} — Admin`;
+    document.getElementById('admin-sidebar-name').textContent = admin.username;
+    document.getElementById('admin-avatar').textContent = admin.username[0].toUpperCase();
+    document.getElementById('admin-city-display').textContent = admin.city;
+}
+
+// ─── Section Navigation ───────────────────────────────────────
+function showAdminSection(name, linkEl) {
+    document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
+    document.getElementById(`section-${name}`).style.display = '';
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    if (linkEl) linkEl.classList.add('active');
+    if (name === 'overview') loadAdminOverview();
+    if (name === 'complaints') loadAdminComplaints();
+    if (name === 'users') loadCityUsers();
+    if (name === 'duplicates') loadDuplicates();
+}
+
+// ─── Load Overview ────────────────────────────────────────────
+async function loadAdminOverview() {
+    try {
+        const data = await API.get('/admin/dashboard');
+        const s = data.stats;
+
+        document.getElementById('admin-stats-grid').innerHTML = `
+            <div class="stat-card" style="--color:var(--blue);">
+                <div class="stat-icon">📋</div>
+                <div class="stat-number">${s.total}</div>
+                <div class="stat-label">Total Complaints</div>
+            </div>
+            <div class="stat-card" style="--color:var(--submitted);">
+                <div class="stat-icon">🆕</div>
+                <div class="stat-number">${s.submitted}</div>
+                <div class="stat-label">Submitted</div>
+            </div>
+            <div class="stat-card" style="--color:var(--amber);">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-number">${s.pending}</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card" style="--color:var(--in-progress);">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-number">${s.in_progress}</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card" style="--color:var(--solved);">
+                <div class="stat-icon">✅</div>
+                <div class="stat-number">${s.solved}</div>
+                <div class="stat-label">Solved</div>
+            </div>
+            <div class="stat-card" style="--color:var(--rejected);">
+                <div class="stat-icon">❌</div>
+                <div class="stat-number">${s.rejected}</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+            <div class="stat-card" style="--color:#7c3aed;">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-number">${s.duplicates}</div>
+                <div class="stat-label">Duplicates</div>
+            </div>
+            <div class="stat-card" style="--color:var(--urgent);">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-number">${s.urgent}</div>
+                <div class="stat-label">Urgent</div>
+            </div>
+            <div class="stat-card" style="--color:var(--navy);">
+                <div class="stat-icon">👥</div>
+                <div class="stat-number">${data.userCount}</div>
+                <div class="stat-label">Citizens</div>
+            </div>
+        `;
+
+        // Ward breakdown
+        const wardBreakdown = document.getElementById('ward-breakdown');
+        if (!data.wardStats || data.wardStats.length === 0) {
+            wardBreakdown.innerHTML = `<div class="empty-state" style="padding:30px;"><p>No data yet.</p></div>`;
+        } else {
+            wardBreakdown.innerHTML = data.wardStats.map(w => {
+                const pct = w.total > 0 ? Math.round((w.solved / w.total) * 100) : 0;
+                return `
+                    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span style="font-weight:600;font-size:0.9rem;">🏘️ ${w.ward}</span>
+                            <span style="font-size:0.82rem;color:var(--text-light);">${w.solved}/${w.total} solved (${pct}%)</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:${pct}%;background:${pct > 70 ? 'var(--solved)' : pct > 30 ? 'var(--amber)' : 'var(--urgent)'};"></div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Type breakdown
+        const typeBreakdown = document.getElementById('type-breakdown');
+        if (!data.typeStats || data.typeStats.length === 0) {
+            typeBreakdown.innerHTML = `<div class="empty-state" style="padding:30px;"><p>No data yet.</p></div>`;
+        } else {
+            const max = data.typeStats[0]?.total || 1;
+            typeBreakdown.innerHTML = data.typeStats.map(t => {
+                const pct = Math.round((t.total / max) * 100);
+                const ptObj = PROBLEM_TYPES.find(p => p.type === t.problem_type) || { icon: '📌' };
+                return `
+                    <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <span style="font-size:0.85rem;">${ptObj.icon} ${t.problem_type}</span>
+                            <strong style="font-size:0.85rem;">${t.total}</strong>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+                    </div>`;
+            }).join('');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Error', 'Failed to load dashboard.', 'error');
+    }
+}
+
+// ─── Load All Complaints ──────────────────────────────────────
+async function loadAdminComplaints() {
+    const container = document.getElementById('admin-complaints-list');
+    container.innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span> Loading...</div>`;
+
+    const params = new URLSearchParams({ limit: 50 });
+    const status = document.getElementById('af-status').value;
+    const priority = document.getElementById('af-priority').value;
+    const sort = document.getElementById('af-sort').value;
+    if (status) params.set('status', status);
+    if (priority) params.set('priority', priority);
+    if (sort) params.set('sort', sort);
+
+    try {
+        const data = await API.get(`/admin/complaints?${params}`);
+        const complaints = data.complaints || [];
+        if (complaints.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><h3>No complaints found</h3><p>Adjust filters to see results.</p></div>`;
+            return;
+        }
+        container.innerHTML = `
+            <div style="margin-bottom:12px;font-size:0.88rem;color:var(--text-light);">Showing ${complaints.length} complaints</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Title</th>
+                            <th>Citizen</th>
+                            <th>Ward</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Attempts</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${complaints.map(c => `
+                            <tr>
+                                <td><strong>#${c.id}</strong></td>
+                                <td>
+                                    <div style="font-weight:600;font-size:0.88rem;">${c.title}</div>
+                                    <div style="font-size:0.78rem;color:var(--text-light);">${c.problem_type}</div>
+                                    ${c.is_duplicate ? '<span class="badge badge-duplicate" style="margin-top:3px;">⚡ Dup</span>' : ''}
+                                    ${c.escalated ? '<span class="badge" style="background:#fff7ed;color:#f97316;margin-top:3px;">⚠️ Esc</span>' : ''}
+                                </td>
+                                <td>
+                                    <div style="font-size:0.88rem;">${c.citizen_name}</div>
+                                    <div style="font-size:0.78rem;color:var(--text-light);">${c.citizen_mobile}</div>
+                                </td>
+                                <td>${c.ward}</td>
+                                <td>${getPriorityBadge(c.priority)}</td>
+                                <td>${getStatusBadge(c.status)}</td>
+                                <td style="text-align:center;">${c.attempt_count}/2</td>
+                                <td style="font-size:0.82rem;">${formatDate(c.created_at)}</td>
+                                <td>
+                                    <div style="display:flex;gap:6px;">
+                                        <button class="btn btn-outline btn-sm" onclick="viewAdminComplaint(${c.id})">View</button>
+                                        <button class="btn btn-primary btn-sm" onclick="openStatusModal(${c.id}, '${c.status}')">Update</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `<div class="empty-state"><p>Failed to load complaints.</p></div>`;
+    }
+}
+
+// ─── Ward View ────────────────────────────────────────────────
+function debounce(fn, delay) {
+    let t;
+    return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); };
+}
+
+async function loadWardComplaints() {
+    const ward = document.getElementById('ward-filter-input').value.trim();
+    if (!ward) return;
+    const container = document.getElementById('ward-complaints-list');
+    container.innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span></div>`;
+    try {
+        const data = await API.get(`/admin/complaints?ward=${encodeURIComponent(ward)}&limit=50`);
+        const complaints = data.complaints || [];
+        if (complaints.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗺️</div><h3>No complaints in "${ward}"</h3></div>`;
+            return;
+        }
+        container.innerHTML = `<div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-light);">${complaints.length} complaints in <strong>${ward}</strong></div>
+        <div class="complaints-grid">${complaints.map(renderAdminComplaintCard).join('')}</div>`;
+    } catch {}
+}
+
+// ─── View Complaint Detail (Admin) ───────────────────────────
+async function viewAdminComplaint(id) {
+    openModal('admin-detail-modal');
+    document.getElementById('admin-detail-body').innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span></div>`;
+    try {
+        const data = await API.get(`/admin/complaints/${id}`);
+        const c = data.complaint;
+        document.getElementById('admin-detail-body').innerHTML = `
+            <div style="display:grid;gap:16px;">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    ${getStatusBadge(c.status)} ${getPriorityBadge(c.priority)}
+                    ${c.is_duplicate ? '<span class="badge badge-duplicate">⚡ Duplicate</span>' : ''}
+                    ${c.escalated ? '<span class="badge" style="background:#fff7ed;color:#f97316;">⚠️ Escalated</span>' : ''}
+                </div>
+                <div>
+                    <h3 style="margin-bottom:4px;">${c.title}</h3>
+                    <div style="color:var(--text-light);font-size:0.88rem;">📂 ${c.problem_type} · #${c.id}</div>
+                </div>
+                <div style="background:var(--off-white);border-radius:var(--radius);padding:14px;font-size:0.9rem;">${c.description}</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:0.88rem;">
+                    <div><div style="color:var(--text-light);">👤 Citizen</div><strong>${c.citizen_name}</strong></div>
+                    <div><div style="color:var(--text-light);">📱 Mobile</div><strong>${c.citizen_mobile}</strong></div>
+                    <div><div style="color:var(--text-light);">✉️ Email</div><strong style="font-size:0.8rem;">${c.citizen_email}</strong></div>
+                    <div><div style="color:var(--text-light);">📍 Location</div><strong>${c.location}</strong></div>
+                    <div><div style="color:var(--text-light);">🏘️ Ward</div><strong>${c.ward}</strong></div>
+                    <div><div style="color:var(--text-light);">🔄 Attempts</div><strong>${c.attempt_count}/2</strong></div>
+                    <div><div style="color:var(--text-light);">📅 Submitted</div><strong>${formatDateTime(c.created_at)}</strong></div>
+                    ${c.resolved_at ? `<div><div style="color:var(--text-light);">✅ Resolved</div><strong>${formatDateTime(c.resolved_at)}</strong></div>` : ''}
+                </div>
+                ${c.image_path ? `<img src="http://localhost:5000/uploads/${c.image_path}" style="border-radius:var(--radius);max-height:320px;object-fit:cover;width:100%;">` : ''}
+                ${c.admin_notes ? `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:12px;"><strong>Previous Note:</strong><br>${c.admin_notes}</div>` : ''}
+            </div>
+        `;
+        document.getElementById('admin-detail-footer').innerHTML = `
+            <button class="btn btn-primary" onclick="closeModal('admin-detail-modal');openStatusModal(${id}, '${c.status}')">✏️ Update Status</button>
+            <button class="btn btn-outline" onclick="closeModal('admin-detail-modal')">Close</button>
+        `;
+    } catch (err) {
+        document.getElementById('admin-detail-body').innerHTML = `<p>Failed to load details.</p>`;
+    }
+}
+
+// ─── Status Update ────────────────────────────────────────────
+function openStatusModal(id, currentStatus) {
+    document.getElementById('update-complaint-id').value = id;
+    document.getElementById('new-status').value = currentStatus;
+    document.getElementById('admin-note').value = '';
+    openModal('status-modal');
+}
+
+async function submitStatusUpdate() {
+    const id = document.getElementById('update-complaint-id').value;
+    const status = document.getElementById('new-status').value;
+    const note = document.getElementById('admin-note').value.trim();
+    const btn = document.getElementById('update-status-btn');
+
+    setLoading(btn, true);
+    try {
+        await API.put(`/admin/complaints/${id}/status`, { status, admin_notes: note });
+        closeModal('status-modal');
+        showToast('Status Updated', `Complaint #${id} status set to "${status}". Citizen notified.`, 'success');
+        loadAdminComplaints();
+        loadAdminOverview();
+    } catch (err) {
+        showToast('Error', err.message, 'error');
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+// ─── City Users ───────────────────────────────────────────────
+async function loadCityUsers() {
+    const container = document.getElementById('users-list');
+    container.innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span></div>`;
+    try {
+        const data = await API.get('/admin/users');
+        const users = data.users || [];
+        if (users.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><h3>No users registered</h3></div>`;
+            return;
+        }
+        container.innerHTML = `
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>Email</th><th>Mobile</th><th>Ward</th><th>Complaints</th><th>Joined</th></tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(u => `
+                            <tr>
+                                <td><strong>${u.username}</strong></td>
+                                <td>${u.email}</td>
+                                <td>${u.mobile}</td>
+                                <td>${u.ward}</td>
+                                <td><span class="badge badge-submitted">${u.complaint_count} complaints</span></td>
+                                <td>${formatDate(u.created_at)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch {}
+}
+
+// ─── Duplicates ───────────────────────────────────────────────
+async function loadDuplicates() {
+    const container = document.getElementById('duplicates-list');
+    container.innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span></div>`;
+    try {
+        const data = await API.get('/admin/duplicates');
+        const dups = data.duplicates || [];
+        if (dups.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><h3>No duplicates detected</h3><p>All complaints are unique.</p></div>`;
+            return;
+        }
+        container.innerHTML = `
+            <div style="margin-bottom:12px;">
+                <span class="badge badge-duplicate">⚡ ${dups.length} duplicate complaints detected</span>
+            </div>
+            <div class="complaints-grid">${dups.map(renderAdminComplaintCard).join('')}
+            </div>`;
+    } catch {}
+}
+
+function renderAdminComplaintCard(c) {
+    const priorityColor = getPriorityColor(c.priority);
+    return `
+        <div class="complaint-card">
+            <div class="complaint-priority-bar" style="background:${priorityColor};"></div>
+            <div class="complaint-body">
+                <div class="complaint-header">
+                    <div>
+                        <div class="complaint-title">${c.title}</div>
+                        <div class="complaint-type">${c.problem_type} · ${c.citizen_name || ''}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                        ${getStatusBadge(c.status)}
+                        ${getPriorityBadge(c.priority)}
+                        ${c.is_duplicate ? '<span class="badge badge-duplicate">⚡ Duplicate</span>' : ''}
+                        ${c.escalated ? '<span class="badge" style="background:#fff7ed;color:#f97316;">⚠️ Escalated</span>' : ''}
+                    </div>
+                </div>
+                <div class="complaint-meta">
+                    <span>📍 ${c.location}</span>
+                    <span>🏘️ ${c.ward}</span>
+                    <span>📅 ${formatDate(c.created_at)}</span>
+                    <span>#${c.id}</span>
+                </div>
+            </div>
+            <div class="complaint-actions" style="flex-direction:column;gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="viewAdminComplaint(${c.id})">View</button>
+                <button class="btn btn-primary btn-sm" onclick="openStatusModal(${c.id}, '${c.status}')">Update</button>
+            </div>
+        </div>
+    `;
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+loadAdminOverview();
+</script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — Municipality Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-page">
+    <!-- Left Panel -->
+    <div class="auth-left">
+        <div class="auth-logo">🌆</div>
+        <h2>Join the Movement</h2>
+        <p>Register to report civic issues and help create a cleaner, safer city for everyone.</p>
+        <div style="margin-top:36px;display:flex;flex-direction:column;gap:10px;max-width:280px;width:100%;">
+            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.8);font-size:0.9rem;">
+                <span style="width:28px;height:28px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;flex-shrink:0;">1</span>
+                Register your account
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.8);font-size:0.9rem;">
+                <span style="width:28px;height:28px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;flex-shrink:0;">2</span>
+                Submit civic complaints
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.8);font-size:0.9rem;">
+                <span style="width:28px;height:28px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;flex-shrink:0;">3</span>
+                Track resolution status
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.8);font-size:0.9rem;">
+                <span style="width:28px;height:28px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;flex-shrink:0;">4</span>
+                Get notified on updates
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="auth-right" style="width:520px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+            <a href="index.html" style="color:var(--text-light);font-size:0.88rem;">← Back to Home</a>
+            <div class="lang-switcher" style="background:var(--border);">
+                <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">हिं</button>
+            </div>
+        </div>
+
+        <!-- Role Tabs -->
+        <div class="auth-tabs">
+            <div class="auth-tab active" id="tab-citizen" onclick="switchRole('citizen')">
+                👤 <span data-t="citizen_register">Citizen Register</span>
+            </div>
+            <div class="auth-tab" id="tab-admin" onclick="switchRole('admin')">
+                🛡️ <span data-t="admin_register">Admin Register</span>
+            </div>
+        </div>
+
+        <h1 id="reg-title">Create Account</h1>
+        <p class="auth-subtitle" id="reg-subtitle">Register as a citizen to start reporting issues.</p>
+
+        <div id="form-error" class="form-error" style="margin-bottom:12px;font-size:0.9rem;background:var(--urgent-bg);padding:10px 14px;border-radius:var(--radius-sm);display:none;"></div>
+
+        <!-- Citizen Form -->
+        <form id="citizen-form" novalidate>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" id="c-username" class="form-control" placeholder="Rahul Sharma" required>
+                    <div class="form-error" id="c-username-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email <span class="required">*</span></label>
+                    <input type="email" id="c-email" class="form-control" placeholder="you@example.com" required>
+                    <div class="form-error" id="c-email-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password <span class="required">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" id="c-password" class="form-control" placeholder="Min 6 characters" required>
+                        <button type="button" onclick="togglePassword('c-password')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:var(--text-light);">👁️</button>
+                    </div>
+                    <div class="form-error" id="c-password-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mobile Number <span class="required">*</span></label>
+                    <input type="tel" id="c-mobile" class="form-control" placeholder="10-digit number" maxlength="10" required>
+                    <div class="form-error" id="c-mobile-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">City <span class="required">*</span></label>
+                    <input type="text" id="c-city" class="form-control" placeholder="e.g. Mumbai" required>
+                    <div class="form-error" id="c-city-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ward <span class="required">*</span></label>
+                    <input type="text" id="c-ward" class="form-control" placeholder="e.g. Ward-5" required>
+                    <div class="form-error" id="c-ward-err"></div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="citizen-btn">
+                <span data-t="create_account">Create Account</span>
+            </button>
+        </form>
+
+        <!-- Admin Form (hidden by default) -->
+        <form id="admin-form" novalidate style="display:none;">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" id="a-username" class="form-control" placeholder="Admin Name" required>
+                    <div class="form-error" id="a-username-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email <span class="required">*</span></label>
+                    <input type="email" id="a-email" class="form-control" placeholder="admin@municipality.com" required>
+                    <div class="form-error" id="a-email-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password <span class="required">*</span></label>
+                    <div style="position:relative;">
+                        <input type="password" id="a-password" class="form-control" placeholder="Min 6 characters" required>
+                        <button type="button" onclick="togglePassword('a-password')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:var(--text-light);">👁️</button>
+                    </div>
+                    <div class="form-error" id="a-password-err"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">City (Jurisdiction) <span class="required">*</span></label>
+                    <input type="text" id="a-city" class="form-control" placeholder="e.g. Mumbai" required>
+                    <div class="form-error" id="a-city-err"></div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-full btn-lg" id="admin-btn">
+                Register as Admin
+            </button>
+        </form>
+
+        <div class="auth-footer" style="margin-top:20px;">
+            <span data-t="already_have_account">Already have an account?</span>
+            <a href="login.html" style="font-weight:600;"> <span data-t="login">Login</span></a>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script>
+    let currentRole = 'citizen';
+    if (Auth.isLoggedIn()) {
+        window.location.href = Auth.getRole() === 'citizen' ? 'dashboard.html' : 'admin-dashboard.html';
+    }
+
+    function switchRole(role) {
+        currentRole = role;
+        document.getElementById('tab-citizen').classList.toggle('active', role === 'citizen');
+        document.getElementById('tab-admin').classList.toggle('active', role === 'admin');
+        document.getElementById('citizen-form').style.display = role === 'citizen' ? '' : 'none';
+        document.getElementById('admin-form').style.display = role === 'admin' ? '' : 'none';
+        document.getElementById('reg-title').textContent = role === 'citizen' ? 'Create Account' : 'Admin Registration';
+        document.getElementById('reg-subtitle').textContent = role === 'citizen' ? 'Register as a citizen to start reporting issues.' : 'Register as an admin to manage city complaints.';
+        hideFormError();
+    }
+
+    function togglePassword(id) {
+        const el = document.getElementById(id);
+        el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function showFormError(msg) {
+        const el = document.getElementById('form-error');
+        el.textContent = msg; el.style.display = 'block';
+    }
+    function hideFormError() {
+        const el = document.getElementById('form-error');
+        el.style.display = 'none'; el.textContent = '';
+    }
+
+    function setFieldError(id, msg) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = msg; if (msg) el.style.color = 'var(--urgent)'; }
+        const input = document.getElementById(id.replace('-err',''));
+        if (input && msg) input.style.borderColor = 'var(--urgent)';
+    }
+
+    // Citizen Registration
+    document.getElementById('citizen-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideFormError();
+        ['c-username-err','c-email-err','c-password-err','c-mobile-err','c-city-err','c-ward-err'].forEach(id => setFieldError(id,''));
+
+        const vals = {
+            username: document.getElementById('c-username').value.trim(),
+            email: document.getElementById('c-email').value.trim(),
+            password: document.getElementById('c-password').value,
+            mobile: document.getElementById('c-mobile').value.trim(),
+            city: document.getElementById('c-city').value.trim(),
+            ward: document.getElementById('c-ward').value.trim()
+        };
+
+        let valid = true;
+        if (!vals.username) { setFieldError('c-username-err', 'Name is required.'); valid = false; }
+        if (!vals.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) { setFieldError('c-email-err', 'Valid email required.'); valid = false; }
+        if (!vals.password || vals.password.length < 6) { setFieldError('c-password-err', 'Min 6 characters.'); valid = false; }
+        if (!vals.mobile || !/^[0-9]{10}$/.test(vals.mobile)) { setFieldError('c-mobile-err', '10-digit number required.'); valid = false; }
+        if (!vals.city) { setFieldError('c-city-err', 'City is required.'); valid = false; }
+        if (!vals.ward) { setFieldError('c-ward-err', 'Ward is required.'); valid = false; }
+        if (!valid) return;
+
+        const btn = document.getElementById('citizen-btn');
+        setLoading(btn, true);
+        try {
+            const data = await API.post('/auth/citizen/register', vals);
+            Auth.login(data.token, data.user, 'citizen');
+            showToast('Registration Successful!', `Welcome, ${vals.username}! Your account is ready.`, 'success');
+            setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        } catch (err) {
+            showFormError(err.message || 'Registration failed.');
+            showToast('Registration Failed', err.message, 'error');
+        } finally {
+            setLoading(btn, false);
+        }
+    });
+
+    // Admin Registration
+    document.getElementById('admin-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideFormError();
+
+        const vals = {
+            username: document.getElementById('a-username').value.trim(),
+            email: document.getElementById('a-email').value.trim(),
+            password: document.getElementById('a-password').value,
+            city: document.getElementById('a-city').value.trim()
+        };
+
+        let valid = true;
+        if (!vals.username) { setFieldError('a-username-err','Name required.'); valid = false; }
+        if (!vals.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.email)) { setFieldError('a-email-err','Valid email required.'); valid = false; }
+        if (!vals.password || vals.password.length < 6) { setFieldError('a-password-err','Min 6 characters.'); valid = false; }
+        if (!vals.city) { setFieldError('a-city-err','City required.'); valid = false; }
+        if (!valid) return;
+
+        const btn = document.getElementById('admin-btn');
+        setLoading(btn, true);
+        try {
+            const data = await API.post('/auth/admin/register', vals);
+            Auth.login(data.token, data.user, data.user.role);
+            showToast('Admin Registered!', 'Welcome to the admin dashboard.', 'success');
+            setTimeout(() => window.location.href = 'admin-dashboard.html', 1000);
+        } catch (err) {
+            showFormError(err.message || 'Registration failed.');
+        } finally {
+            setLoading(btn, false);
+        }
+    });
+</script>
+</body>
+</html>

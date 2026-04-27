@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard — Municipality Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-inner">
+        <div class="navbar-brand">
+            <div class="emblem">M</div>
+            <div class="brand-text">
+                <span>Municipality Portal</span>
+                <span id="nav-city">Citizen Dashboard</span>
+            </div>
+        </div>
+        <div class="navbar-links">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">हिं</button>
+            </div>
+            <div class="notif-bell" id="notif-bell" onclick="toggleNotifications()">
+                🔔
+                <span class="notif-count" id="notif-count" style="display:none;">0</span>
+                <!-- Notifications Dropdown -->
+                <div class="notif-dropdown" id="notif-dropdown">
+                    <div class="notif-header">
+                        <strong data-t="notifications">Notifications</strong>
+                        <button onclick="markAllRead(event)" style="background:none;border:none;font-size:0.8rem;color:var(--blue);cursor:pointer;" data-t="mark_all_read">Mark all read</button>
+                    </div>
+                    <div id="notif-list"><div style="padding:20px;text-align:center;color:var(--text-light);font-size:0.88rem;" data-t="no_notifications">No notifications</div></div>
+                </div>
+            </div>
+            <span id="nav-username" style="color:rgba(255,255,255,0.85);font-size:0.88rem;hide-mobile"></span>
+            <button onclick="Auth.logout()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.8);border-color:rgba(255,255,255,0.3);" data-t="logout">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sidebar-avatar">R</div>
+            <div class="sidebar-user-name" id="sidebar-name">Loading...</div>
+            <div class="sidebar-user-role">🏙️ <span id="sidebar-city">—</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="active" onclick="showSection('overview',this)">
+                <span class="nav-icon">📊</span> Overview
+            </a>
+            <a href="#" onclick="showSection('my-complaints',this)">
+                <span class="nav-icon">📋</span> <span data-t="my_complaints">My Complaints</span>
+            </a>
+            <a href="#" onclick="showSection('new-complaint',this)">
+                <span class="nav-icon">➕</span> <span data-t="new_complaint">New Complaint</span>
+            </a>
+            <div class="sidebar-divider"></div>
+            <a href="login.html" onclick="Auth.logout();return false;">
+                <span class="nav-icon">🚪</span> <span data-t="logout">Logout</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ── Overview Section ──────────────────────────── -->
+        <section id="section-overview">
+            <div class="page-header">
+                <h2>Welcome back, <span id="welcome-name">Citizen</span> 👋</h2>
+                <p>Here's a summary of your reported issues.</p>
+            </div>
+            <div class="stats-grid" id="citizen-stats">
+                <div class="stat-card" style="--color:var(--blue);">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-label">Total Reports</div>
+                </div>
+                <div class="stat-card" style="--color:var(--submitted);">
+                    <div class="stat-icon">🆕</div>
+                    <div class="stat-number" id="stat-submitted">0</div>
+                    <div class="stat-label">Submitted</div>
+                </div>
+                <div class="stat-card" style="--color:var(--in-progress);">
+                    <div class="stat-icon">🔧</div>
+                    <div class="stat-number" id="stat-inprogress">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card" style="--color:var(--solved);">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-number" id="stat-solved">0</div>
+                    <div class="stat-label">Solved</div>
+                </div>
+            </div>
+
+            <!-- Recent Complaints Preview -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Complaints</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showSection('my-complaints', document.querySelector('.sidebar-nav a:nth-child(2)'))">View All</button>
+                </div>
+                <div id="recent-complaints-list">
+                    <div class="page-loader"><span class="loading-spinner dark"></span> Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── My Complaints Section ─────────────────────── -->
+        <section id="section-my-complaints" style="display:none;">
+            <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <h2 data-t="my_complaints">My Complaints</h2>
+                    <p>Track all your reported issues and their current status.</p>
+                </div>
+                <button class="btn btn-primary" onclick="showSection('new-complaint', document.querySelector('.sidebar-nav a:nth-child(3)'))">
+                    + New Complaint
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+                <select id="filter-status" class="form-control" onchange="loadMyComplaints()">
+                    <option value="">All Status</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Solved">Solved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div id="complaints-list">
+                <div class="page-loader"><span class="loading-spinner dark"></span> Loading...</div>
+            </div>
+        </section>
+
+        <!-- ── New Complaint Section ─────────────────────── -->
+        <section id="section-new-complaint" style="display:none;">
+            <div class="page-header">
+                <h2>Submit New Complaint</h2>
+                <p>Report a civic issue in your area. Please provide as much detail as possible.</p>
+            </div>
+
+            <div class="card">
+                <form id="complaint-form" enctype="multipart/form-data" novalidate>
+
+                    <!-- Problem Type -->
+                    <div class="form-group">
+                        <label class="form-label">Problem Type <span class="required">*</span></label>
+                        <div class="problem-types-grid" id="problem-types-grid">
+                            <!-- Dynamically populated -->
+                        </div>
+                        <input type="hidden" id="selected-problem-type">
+                        <div class="form-error" id="ptype-error"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column:1/-1;">
+                            <label class="form-label">Complaint Title <span class="required">*</span></label>
+                            <input type="text" id="c-title" class="form-control" placeholder="Brief title of the issue" required maxlength="200">
+                            <div class="form-error" id="title-error"></div>
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1;">
+                            <label class="form-label">Description <span class="required">*</span></label>
+                            <textarea id="c-desc" class="form-control" rows="4" placeholder="Describe the problem in detail..." required maxlength="1000"></textarea>
+                            <div class="form-error" id="desc-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Location / Address <span class="required">*</span></label>
+                            <input type="text" id="c-location" class="form-control" placeholder="Street name, landmark..." required>
+                            <div class="form-error" id="location-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority Level <span class="required">*</span></label>
+                            <select id="c-priority" class="form-control" required>
+                                <option value="Low">🟢 Low — Can wait a month</option>
+                                <option value="Medium" selected>🟡 Medium — Within a week</option>
+                                <option value="High">🟠 High — Within 24 hours</option>
+                                <option value="Urgent">🔴 Urgent — Immediate!</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Photo Evidence (Optional)</label>
+                        <div class="file-upload-area" id="upload-area" onclick="document.getElementById('c-image').click()" ondragover="handleDrag(event)" ondrop="handleDrop(event)">
+                            <input type="file" id="c-image" name="image" accept="image/*" style="display:none" onchange="previewImage(event)">
+                            <div id="upload-placeholder">
+                                <div class="file-upload-icon">📷</div>
+                                <div class="file-upload-text"><strong>Click to upload</strong> or drag & drop</div>
+                                <div style="font-size:0.78rem;color:var(--text-light);margin-top:4px;">JPG, PNG, GIF up to 5MB</div>
+                            </div>
+                            <div id="image-preview" style="display:none;"></div>
+                        </div>
+                    </div>
+
+                    <div id="complaint-form-error" class="form-error" style="margin-bottom:12px;"></div>
+
+                    <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;">
+                        <button type="button" class="btn btn-outline" onclick="resetComplaintForm()">Clear Form</button>
+                        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                            📤 Submit Complaint
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Complaint Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:680px;">
+        <div class="modal-header">
+            <h3>Complaint Details</h3>
+            <button class="modal-close" onclick="closeModal('detail-modal')">×</button>
+        </div>
+        <div class="modal-body" id="detail-modal-body">Loading...</div>
+        <div class="modal-footer" id="detail-modal-footer"></div>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal" style="max-width:420px;">
+        <div class="modal-header">
+            <h3>Delete Complaint?</h3>
+            <button class="modal-close" onclick="closeModal('delete-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <p>This will permanently delete the complaint and all associated data. This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('delete-modal')">Cancel</button>
+            <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script>
+// ─── Auth Guard ───────────────────────────────────────────────
+if (!Auth.requireAuth('citizen')) { /* redirected */ }
+
+const user = Auth.getUser();
+if (user) {
+    document.getElementById('nav-username').textContent = user.username;
+    document.getElementById('nav-city').textContent = `${user.city} — Citizen`;
+    document.getElementById('sidebar-name').textContent = user.username;
+    document.getElementById('sidebar-city').textContent = `${user.city} · ${user.ward}`;
+    document.getElementById('sidebar-avatar').textContent = user.username[0].toUpperCase();
+    document.getElementById('welcome-name').textContent = user.username.split(' ')[0];
+}
+
+// ─── Section Navigation ───────────────────────────────────────
+function showSection(name, linkEl) {
+    document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
+    document.getElementById(`section-${name}`).style.display = '';
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    if (linkEl) linkEl.classList.add('active');
+    if (name === 'my-complaints') loadMyComplaints();
+    if (name === 'overview') loadOverview();
+    if (name === 'new-complaint') renderProblemTypes();
+}
+
+// ─── Problem Types Grid ───────────────────────────────────────
+function renderProblemTypes() {
+    const grid = document.getElementById('problem-types-grid');
+    if (grid.children.length > 0) return;
+    grid.innerHTML = PROBLEM_TYPES.map(pt => `
+        <div class="problem-type-btn" onclick="selectProblemType(this, '${pt.type}')">
+            <span class="pt-icon">${pt.icon}</span>
+            ${pt.type}
+        </div>
+    `).join('');
+}
+
+function selectProblemType(el, type) {
+    document.querySelectorAll('.problem-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('selected-problem-type').value = type;
+    document.getElementById('ptype-error').textContent = '';
+    // Auto-fill title suggestion
+    const titleEl = document.getElementById('c-title');
+    if (!titleEl.value) titleEl.value = type + ' issue at ';
+}
+
+// ─── Image Upload ─────────────────────────────────────────────
+function previewImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        document.getElementById('upload-placeholder').style.display = 'none';
+        document.getElementById('image-preview').style.display = 'flex';
+        document.getElementById('image-preview').innerHTML = `
+            <div class="file-preview">
+                <img src="${ev.target.result}" alt="preview">
+                <div>
+                    <div style="font-weight:600;font-size:0.88rem;">${file.name}</div>
+                    <div style="font-size:0.8rem;color:var(--text-light);">${(file.size/1024).toFixed(1)} KB</div>
+                </div>
+                <button type="button" onclick="removeImage()" class="btn btn-danger btn-sm" style="margin-left:auto;">Remove</button>
+            </div>
+        `;
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage() {
+    document.getElementById('c-image').value = '';
+    document.getElementById('upload-placeholder').style.display = '';
+    document.getElementById('image-preview').style.display = 'none';
+    document.getElementById('image-preview').innerHTML = '';
+}
+
+function handleDrag(e) { e.preventDefault(); document.getElementById('upload-area').classList.add('dragover'); }
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-area').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const input = document.getElementById('c-image');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        previewImage({ target: input });
+    }
+}
+
+function resetComplaintForm() {
+    document.getElementById('complaint-form').reset();
+    document.querySelectorAll('.problem-type-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('selected-problem-type').value = '';
+    removeImage();
+    document.getElementById('complaint-form-error').textContent = '';
+}
+
+// ─── Submit Complaint ─────────────────────────────────────────
+document.getElementById('complaint-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('complaint-form-error').textContent = '';
+
+    const problemType = document.getElementById('selected-problem-type').value;
+    const title = document.getElementById('c-title').value.trim();
+    const description = document.getElementById('c-desc').value.trim();
+    const location = document.getElementById('c-location').value.trim();
+    const priority = document.getElementById('c-priority').value;
+
+    let valid = true;
+    if (!problemType) { document.getElementById('ptype-error').textContent = 'Please select a problem type.'; valid = false; }
+    if (!title) { document.getElementById('title-error').textContent = 'Title is required.'; valid = false; }
+    if (!description) { document.getElementById('desc-error').textContent = 'Description is required.'; valid = false; }
+    if (!location) { document.getElementById('location-error').textContent = 'Location is required.'; valid = false; }
+    if (!valid) return;
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('problem_type', problemType);
+    formData.append('location', location);
+    formData.append('priority', priority);
+    const imageFile = document.getElementById('c-image').files[0];
+    if (imageFile) formData.append('image', imageFile);
+
+    const btn = document.getElementById('submit-btn');
+    setLoading(btn, true);
+    try {
+        const data = await API.postForm('/complaints', formData);
+        let msg = 'Complaint submitted! You will be notified of status updates.';
+        if (data.isDuplicate) msg += '\n⚠️ Note: A similar complaint already exists for this location.';
+        showToast('Complaint Submitted!', msg, 'success', 6000);
+        resetComplaintForm();
+        setTimeout(() => showSection('my-complaints', document.querySelector('.sidebar-nav a:nth-child(2)')), 1500);
+    } catch (err) {
+        document.getElementById('complaint-form-error').textContent = err.message || 'Failed to submit complaint.';
+        showToast('Submission Failed', err.message, 'error');
+    } finally {
+        setLoading(btn, false);
+    }
+});
+
+// ─── Load Overview ────────────────────────────────────────────
+async function loadOverview() {
+    try {
+        const data = await API.get('/complaints/my?limit=5');
+        const complaints = data.complaints || [];
+
+        // Stats
+        const stats = { total: complaints.length, submitted: 0, inprogress: 0, solved: 0 };
+        const allData = await API.get('/complaints/my?limit=1000');
+        allData.complaints.forEach(c => {
+            if (c.status === 'Submitted' || c.status === 'Pending') stats.submitted++;
+            if (c.status === 'In Progress') stats.inprogress++;
+            if (c.status === 'Solved') stats.solved++;
+        });
+        stats.total = allData.complaints.length;
+
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-submitted').textContent = stats.submitted;
+        document.getElementById('stat-inprogress').textContent = stats.inprogress;
+        document.getElementById('stat-solved').textContent = stats.solved;
+
+        // Recent complaints
+        const list = document.getElementById('recent-complaints-list');
+        if (complaints.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state" style="padding:40px 20px;">
+                    <div class="empty-icon">📋</div>
+                    <h3>No complaints yet</h3>
+                    <p>Start by reporting a civic issue in your area.</p>
+                    <button class="btn btn-primary" onclick="showSection('new-complaint', document.querySelector('.sidebar-nav a:nth-child(3)'))">+ Report Issue</button>
+                </div>`;
+            return;
+        }
+        list.innerHTML = `<div class="complaints-grid">${complaints.slice(0,5).map(renderComplaintCard).join('')}</div>`;
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// ─── Load My Complaints ───────────────────────────────────────
+async function loadMyComplaints() {
+    const status = document.getElementById('filter-status').value;
+    const container = document.getElementById('complaints-list');
+    container.innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span> Loading...</div>`;
+
+    try {
+        const params = new URLSearchParams({ limit: 50 });
+        if (status) params.set('status', status);
+        const data = await API.get(`/complaints/my?${params}`);
+        const complaints = data.complaints || [];
+
+        if (complaints.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3>No complaints found</h3>
+                    <p>${status ? `No ${status} complaints.` : "You haven't submitted any complaints yet."}</p>
+                    <button class="btn btn-primary" onclick="showSection('new-complaint', document.querySelector('.sidebar-nav a:nth-child(3)'))">+ Report Issue</button>
+                </div>`;
+            return;
+        }
+        container.innerHTML = `<div class="complaints-grid">${complaints.map(renderComplaintCard).join('')}</div>`;
+    } catch (err) {
+        container.innerHTML = `<div class="empty-state"><p>Failed to load complaints.</p></div>`;
+    }
+}
+
+function renderComplaintCard(c) {
+    const priorityColor = getPriorityColor(c.priority);
+    const shareUrl = `${window.location.origin}/share.html?token=${c.share_token}`;
+    const attemptInfo = c.attempt_count > 1 ? `<span>🔄 Attempt ${c.attempt_count}/2</span>` : '';
+    const escalatedBadge = c.escalated ? `<span class="badge badge-duplicate">⚠️ Escalated</span>` : '';
+    const dupBadge = c.is_duplicate ? `<span class="badge badge-duplicate">⚡ Duplicate</span>` : '';
+
+    return `
+        <div class="complaint-card">
+            <div class="complaint-priority-bar" style="background:${priorityColor};"></div>
+            <div class="complaint-body">
+                <div class="complaint-header">
+                    <div>
+                        <div class="complaint-title">${c.title}</div>
+                        <div class="complaint-type">📂 ${c.problem_type}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
+                        ${getStatusBadge(c.status)}
+                        ${getPriorityBadge(c.priority)}
+                        ${dupBadge}${escalatedBadge}
+                    </div>
+                </div>
+                <div class="complaint-meta">
+                    <span>📍 ${c.location}</span>
+                    <span>🏘️ ${c.ward}</span>
+                    <span>📅 ${formatDate(c.created_at)}</span>
+                    ${attemptInfo}
+                    <span>#${c.id}</span>
+                </div>
+                ${c.escalated ? `
+                    <div class="escalation-banner" style="margin-top:10px;">
+                        <div class="escalation-icon">⚠️</div>
+                        <div><strong>Escalated to Higher Authority</strong><br><small>This complaint has been escalated after 2 failed attempts. Higher authorities have been notified.</small></div>
+                    </div>` : ''}
+            </div>
+            <div class="complaint-actions" style="flex-direction:column;gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="viewComplaint(${c.id})">View</button>
+                <button class="btn btn-sm" style="background:var(--sky);color:var(--blue);border:1px solid var(--border);" onclick="shareComplaint('${shareUrl}')">📤</button>
+                ${c.status === 'Rejected' && c.attempt_count < 2 ? `<button class="btn btn-amber btn-sm" onclick="reattemptComplaint(${c.id})">↩</button>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="confirmDelete(${c.id})">🗑</button>
+            </div>
+        </div>
+    `;
+}
+
+// ─── View Complaint Detail ────────────────────────────────────
+async function viewComplaint(id) {
+    openModal('detail-modal');
+    document.getElementById('detail-modal-body').innerHTML = `<div class="page-loader"><span class="loading-spinner dark"></span></div>`;
+
+    try {
+        const data = await API.get(`/complaints/${id}`);
+        const c = data.complaint;
+        const shareUrl = `${window.location.origin}/share.html?token=${c.share_token}`;
+
+        document.getElementById('detail-modal-body').innerHTML = `
+            <div style="display:grid;gap:16px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    ${getStatusBadge(c.status)} ${getPriorityBadge(c.priority)}
+                    ${c.is_duplicate ? '<span class="badge badge-duplicate">⚡ Duplicate</span>' : ''}
+                    ${c.escalated ? '<span class="badge" style="background:#fff7ed;color:#f97316;">⚠️ Escalated</span>' : ''}
+                </div>
+                <div>
+                    <h3 style="margin-bottom:4px;">${c.title}</h3>
+                    <div style="color:var(--text-light);font-size:0.88rem;">📂 ${c.problem_type}</div>
+                </div>
+                <div style="background:var(--off-white);border-radius:var(--radius);padding:14px;font-size:0.9rem;color:var(--text-mid);">${c.description}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.88rem;">
+                    <div><span style="color:var(--text-light);">📍 Location</span><br><strong>${c.location}</strong></div>
+                    <div><span style="color:var(--text-light);">🏘️ Ward</span><br><strong>${c.ward}</strong></div>
+                    <div><span style="color:var(--text-light);">📅 Submitted</span><br><strong>${formatDateTime(c.created_at)}</strong></div>
+                    <div><span style="color:var(--text-light);">🔄 Attempts</span><br><strong>${c.attempt_count} / 2</strong></div>
+                    ${c.resolved_at ? `<div><span style="color:var(--text-light);">✅ Resolved</span><br><strong>${formatDateTime(c.resolved_at)}</strong></div>` : ''}
+                </div>
+                ${c.image_path ? `<img src="http://localhost:5000/uploads/${c.image_path}" alt="Complaint Image" style="border-radius:var(--radius);max-height:300px;object-fit:cover;width:100%;">` : ''}
+                ${c.admin_notes ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--radius);padding:12px;"><strong>Admin Note:</strong><br>${c.admin_notes}</div>` : ''}
+                <div>
+                    <label class="form-label">Share this complaint</label>
+                    <div class="share-link-box">
+                        <input type="text" value="${shareUrl}" readonly id="share-input-${c.id}">
+                        <button class="btn btn-primary copy-btn btn-sm" onclick="copyToClipboard('${shareUrl}', this)">Copy</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const footer = document.getElementById('detail-modal-footer');
+        footer.innerHTML = '';
+        if (c.status === 'Rejected' && c.attempt_count < 2) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-amber';
+            btn.textContent = `↩ Re-attempt (${c.attempt_count}/2 used)`;
+            btn.onclick = async () => { closeModal('detail-modal'); await reattemptComplaint(id); };
+            footer.appendChild(btn);
+        }
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn btn-outline';
+        closeBtn.textContent = 'Close';
+        closeBtn.onclick = () => closeModal('detail-modal');
+        footer.appendChild(closeBtn);
+    } catch (err) {
+        document.getElementById('detail-modal-body').innerHTML = `<p style="color:var(--urgent);">Failed to load complaint details.</p>`;
+    }
+}
+
+// ─── Delete Complaint ─────────────────────────────────────────
+let deleteTargetId = null;
+function confirmDelete(id) {
+    deleteTargetId = id;
+    openModal('delete-modal');
+}
+document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+    if (!deleteTargetId) return;
+    setLoading(document.getElementById('confirm-delete-btn'), true);
+    try {
+        await API.delete(`/complaints/${deleteTargetId}`);
+        closeModal('delete-modal');
+        showToast('Deleted', 'Complaint removed successfully.', 'success');
+        loadMyComplaints();
+        loadOverview();
+    } catch (err) {
+        showToast('Error', err.message, 'error');
+    } finally {
+        setLoading(document.getElementById('confirm-delete-btn'), false);
+        deleteTargetId = null;
+    }
+});
+
+// ─── Re-attempt Complaint ─────────────────────────────────────
+async function reattemptComplaint(id) {
+    try {
+        const data = await API.post(`/complaints/${id}/reattempt`);
+        showToast('Re-submitted', data.message, data.escalated ? 'warning' : 'success');
+        loadMyComplaints();
+    } catch (err) {
+        showToast('Error', err.message, 'error');
+    }
+}
+
+// ─── Share Complaint ──────────────────────────────────────────
+function shareComplaint(url) {
+    if (navigator.share) {
+        navigator.share({ title: 'Municipality Complaint', url });
+    } else {
+        navigator.clipboard.writeText(url).then(() => showToast('Link Copied', 'Share link copied to clipboard.', 'success'));
+    }
+}
+
+// ─── Notifications ────────────────────────────────────────────
+async function loadNotifications() {
+    try {
+        const data = await API.get('/notifications');
+        const count = data.unreadCount || 0;
+        const countEl = document.getElementById('notif-count');
+        countEl.textContent = count;
+        countEl.style.display = count > 0 ? 'flex' : 'none';
+
+        const list = document.getElementById('notif-list');
+        if (!data.notifications || data.notifications.length === 0) {
+            list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-light);font-size:0.88rem;">No notifications</div>`;
+            return;
+        }
+        list.innerHTML = data.notifications.slice(0, 10).map(n => `
+            <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markRead(${n.id})">
+                <div class="notif-item-title">${n.title}</div>
+                <div class="notif-item-msg">${n.message}</div>
+                <div class="notif-item-time">${timeAgo(n.created_at)}</div>
+            </div>
+        `).join('');
+    } catch {}
+}
+
+async function markRead(id) {
+    try { await API.put(`/notifications/${id}/read`); loadNotifications(); } catch {}
+}
+
+async function markAllRead(e) {
+    e.stopPropagation();
+    try { await API.put('/notifications/read-all'); loadNotifications(); } catch {}
+}
+
+function toggleNotifications() {
+    document.getElementById('notif-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+    if (!e.target.closest('#notif-bell')) {
+        document.getElementById('notif-dropdown').classList.remove('open');
+    }
+});
+
+// ─── Init ─────────────────────────────────────────────────────
+loadOverview();
+loadNotifications();
+setInterval(loadNotifications, 30000); // Poll every 30s
+</script>
+</body>
+</html>

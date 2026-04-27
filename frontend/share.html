@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Complaint — Municipality Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-wrapper">
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <div class="navbar-brand">
+            <div class="emblem">M</div>
+            <div class="brand-text">
+                <span>Municipality Portal</span>
+                <span>Shared Complaint View</span>
+            </div>
+        </div>
+        <div class="navbar-links">
+            <a href="index.html">Home</a>
+            <a href="login.html" class="btn-primary-nav">Login</a>
+        </div>
+    </div>
+</nav>
+
+<main style="max-width:680px;margin:40px auto;padding:0 20px;">
+    <div id="share-content">
+        <div class="page-loader"><span class="loading-spinner dark"></span> Loading complaint...</div>
+    </div>
+</main>
+
+<footer><p>© 2024 Smart Municipality Portal</p></footer>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script>
+    const token = new URLSearchParams(window.location.search).get('token');
+    const container = document.getElementById('share-content');
+
+    if (!token) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center;padding:48px;">
+                <div style="font-size:3rem;margin-bottom:16px;">🔗</div>
+                <h2>Invalid Share Link</h2>
+                <p>This share link is invalid or has expired.</p>
+                <a href="index.html" class="btn btn-primary" style="margin-top:20px;">Go Home</a>
+            </div>`;
+    } else {
+        (async () => {
+            try {
+                const data = await API.get(`/complaints/share/${token}`);
+                const c = data.complaint;
+                const priorityColor = getPriorityColor(c.priority);
+
+                container.innerHTML = `
+                    <div style="margin-bottom:16px;">
+                        <div class="breadcrumb">
+                            <a href="index.html">Home</a> <span>›</span> <span>Shared Complaint #${c.id}</span>
+                        </div>
+                        <h2>Shared Complaint Report</h2>
+                        <p style="font-size:0.88rem;color:var(--text-light);">This complaint has been publicly shared by the citizen.</p>
+                    </div>
+                    <div class="card" style="border-left:4px solid ${priorityColor};">
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+                            ${getStatusBadge(c.status)} ${getPriorityBadge(c.priority)}
+                        </div>
+                        <h3 style="margin-bottom:4px;">${c.title}</h3>
+                        <div style="color:var(--text-light);margin-bottom:20px;font-size:0.88rem;">📂 ${c.problem_type} · Reported by: ${c.citizen_name}</div>
+                        <div style="background:var(--off-white);border-radius:var(--radius);padding:16px;margin-bottom:20px;font-size:0.92rem;color:var(--text-mid);">${c.description}</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.88rem;margin-bottom:20px;">
+                            <div><div style="color:var(--text-light);">📍 Location</div><strong>${c.location}</strong></div>
+                            <div><div style="color:var(--text-light);">🏘️ Ward</div><strong>${c.ward}</strong></div>
+                            <div><div style="color:var(--text-light);">🏙️ City</div><strong>${c.city}</strong></div>
+                            <div><div style="color:var(--text-light);">📅 Submitted</div><strong>${formatDateTime(c.created_at)}</strong></div>
+                            <div><div style="color:var(--text-light);">🔄 Attempts</div><strong>${c.attempt_count}/2</strong></div>
+                            ${c.updated_at !== c.created_at ? `<div><div style="color:var(--text-light);">🔔 Last Updated</div><strong>${formatDateTime(c.updated_at)}</strong></div>` : ''}
+                        </div>
+                        ${c.image_path ? `<img src="http://localhost:5000/uploads/${c.image_path}" style="border-radius:var(--radius);max-height:400px;object-fit:cover;width:100%;margin-bottom:20px;">` : ''}
+
+                        <!-- Status Timeline -->
+                        <div style="background:var(--off-white);border-radius:var(--radius);padding:16px;">
+                            <h4 style="margin-bottom:12px;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-light);">Complaint Status</h4>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                ${['Submitted','Pending','In Progress','Solved'].map(s => {
+                                    const statuses = ['Submitted','Pending','In Progress','Solved','Rejected'];
+                                    const currentIdx = statuses.indexOf(c.status);
+                                    const thisIdx = statuses.indexOf(s);
+                                    const isActive = c.status === s;
+                                    const isPast = c.status !== 'Rejected' && thisIdx <= currentIdx;
+                                    return `<span style="padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;
+                                        background:${isActive ? 'var(--navy)' : isPast ? 'var(--sky)' : 'var(--off-white)'};
+                                        color:${isActive ? 'var(--white)' : isPast ? 'var(--blue)' : 'var(--text-light)'};
+                                        border:1px solid ${isActive ? 'var(--navy)' : isPast ? 'var(--border)' : 'var(--border)'};">
+                                        ${s}
+                                    </span>`;
+                                }).join('')}
+                                ${c.status === 'Rejected' ? `<span style="padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;background:var(--urgent-bg);color:var(--urgent);border:1px solid var(--border);">Rejected</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;text-align:center;">
+                        <p style="font-size:0.88rem;color:var(--text-light);">Want to report a civic issue?</p>
+                        <a href="register.html" class="btn btn-primary" style="margin-top:8px;">Register & Report Issue</a>
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="card" style="text-align:center;padding:48px;">
+                        <div style="font-size:3rem;margin-bottom:16px;">❌</div>
+                        <h2>Complaint Not Found</h2>
+                        <p>This complaint may have been deleted or the link is invalid.</p>
+                        <a href="index.html" class="btn btn-primary" style="margin-top:20px;">Go Home</a>
+                    </div>`;
+            }
+        })();
+    }
+</script>
+</body>
+</html>

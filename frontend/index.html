@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Municipality Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-wrapper">
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-inner">
+        <div class="navbar-brand">
+            <div class="emblem">M</div>
+            <div class="brand-text">
+                <span>Municipality Portal</span>
+                <span>Smart City Problem Reporting</span>
+            </div>
+        </div>
+        <div class="navbar-links">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">हिं</button>
+            </div>
+            <a href="login.html" data-t="login">Login</a>
+            <a href="register.html" class="btn-primary-nav" data-t="register">Register</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge" data-t="hero_badge">🏛️ Official Municipality Portal</div>
+        <h1 data-t="hero_title">Smart Municipality Problem Reporting</h1>
+        <p data-t="hero_subtitle">Report civic issues in your city. Track progress. Get results. Together we build better cities.</p>
+        <div class="hero-buttons">
+            <a href="register.html" class="btn btn-amber btn-lg" data-t="report_issue">📋 Report an Issue</a>
+            <a href="login.html?role=admin" class="btn btn-outline btn-lg" style="color:white;border-color:rgba(255,255,255,0.4);" data-t="admin_portal">🛡️ Admin Portal</a>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Strip -->
+<section style="background:var(--white);border-bottom:1px solid var(--border);">
+    <div class="container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0;">
+        <div style="padding:24px 20px;text-align:center;border-right:1px solid var(--border);">
+            <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--navy);">10+</div>
+            <div style="font-size:0.82rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;">Problem Categories</div>
+        </div>
+        <div style="padding:24px 20px;text-align:center;border-right:1px solid var(--border);">
+            <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--navy);">4</div>
+            <div style="font-size:0.82rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;">Priority Levels</div>
+        </div>
+        <div style="padding:24px 20px;text-align:center;border-right:1px solid var(--border);">
+            <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--navy);">Real‑time</div>
+            <div style="font-size:0.82rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;">Status Tracking</div>
+        </div>
+        <div style="padding:24px 20px;text-align:center;">
+            <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--navy);">2-Lang</div>
+            <div style="font-size:0.82rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;">EN + हिंदी</div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section style="padding:60px 20px;background:var(--off-white);">
+    <div class="container">
+        <div style="text-align:center;margin-bottom:40px;">
+            <h2>How It Works</h2>
+            <p style="max-width:500px;margin:8px auto 0;">A transparent, efficient system connecting citizens with municipal authorities.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📸</div>
+                <h3 data-t="feat1_title">Easy Reporting</h3>
+                <p data-t="feat1_desc">Submit complaints with images, location, and priority in minutes.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3 data-t="feat2_title">Real-time Tracking</h3>
+                <p data-t="feat2_desc">Track complaint status from submission to resolution.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3 data-t="feat3_title">Admin Dashboard</h3>
+                <p data-t="feat3_desc">City officials manage, prioritize, and resolve issues efficiently.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <h3 data-t="feat4_title">Notifications</h3>
+                <p data-t="feat4_desc">Get instant alerts when your complaint status changes.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Problem Types -->
+<section style="padding:60px 20px;background:var(--white);">
+    <div class="container">
+        <div style="text-align:center;margin-bottom:40px;">
+            <h2>Reportable Issues</h2>
+            <p style="max-width:500px;margin:8px auto 0;">We handle 10 categories of civic problems in your city.</p>
+        </div>
+        <div class="problem-types-grid">
+            <div class="problem-type-btn"><span class="pt-icon">🛣️</span>Road damage / potholes</div>
+            <div class="problem-type-btn"><span class="pt-icon">🗑️</span>Garbage issues</div>
+            <div class="problem-type-btn"><span class="pt-icon">🚿</span>Drainage/sewage overflow</div>
+            <div class="problem-type-btn"><span class="pt-icon">💡</span>Street light issues</div>
+            <div class="problem-type-btn"><span class="pt-icon">🚻</span>Public toilet issues</div>
+            <div class="problem-type-btn"><span class="pt-icon">🏚️</span>Damaged public property</div>
+            <div class="problem-type-btn"><span class="pt-icon">🚫</span>Blocked drains</div>
+            <div class="problem-type-btn"><span class="pt-icon">🦶</span>Broken footpaths</div>
+            <div class="problem-type-btn"><span class="pt-icon">🌳</span>Fallen trees</div>
+            <div class="problem-type-btn"><span class="pt-icon">💧</span>Water leakage / pipeline break</div>
+        </div>
+    </div>
+</section>
+
+<!-- Priority Color Guide -->
+<section style="padding:40px 20px;background:var(--off-white);">
+    <div class="container">
+        <h3 style="text-align:center;margin-bottom:24px;">Priority Color System</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+            <div style="background:var(--urgent-bg);border:1px solid var(--urgent);border-radius:var(--radius);padding:14px 24px;text-align:center;">
+                <div style="font-size:1.4rem;font-weight:700;color:var(--urgent);">🔴 Urgent</div>
+                <div style="font-size:0.82rem;color:var(--text-mid);margin-top:4px;">Immediate attention needed</div>
+            </div>
+            <div style="background:var(--high-bg);border:1px solid var(--high);border-radius:var(--radius);padding:14px 24px;text-align:center;">
+                <div style="font-size:1.4rem;font-weight:700;color:var(--high);">🟠 High</div>
+                <div style="font-size:0.82rem;color:var(--text-mid);margin-top:4px;">Address within 24 hours</div>
+            </div>
+            <div style="background:var(--medium-bg);border:1px solid var(--medium);border-radius:var(--radius);padding:14px 24px;text-align:center;">
+                <div style="font-size:1.4rem;font-weight:700;color:var(--medium);">🟡 Medium</div>
+                <div style="font-size:0.82rem;color:var(--text-mid);margin-top:4px;">Address within a week</div>
+            </div>
+            <div style="background:var(--low-bg);border:1px solid var(--low);border-radius:var(--radius);padding:14px 24px;text-align:center;">
+                <div style="font-size:1.4rem;font-weight:700;color:var(--low);">🟢 Low</div>
+                <div style="font-size:0.82rem;color:var(--text-mid);margin-top:4px;">Address within a month</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section style="padding:60px 20px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));text-align:center;">
+    <h2 style="color:var(--white);margin-bottom:12px;">Ready to Make Your City Better?</h2>
+    <p style="color:rgba(255,255,255,0.7);margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;">Join thousands of citizens actively improving their communities through smart reporting.</p>
+    <a href="register.html" class="btn btn-amber btn-lg">Get Started — It's Free</a>
+</section>
+
+<footer>
+    <p>© 2024 Smart Municipality Portal. Built with ❤️ for better cities.</p>
+</footer>
+
+<script src="js/translations.js"></script>
+</body>
+</html>
