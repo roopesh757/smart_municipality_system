@@ -228,7 +228,36 @@ const getDuplicates = async (req, res) => {
     }
 };
 
+// ─── Delete User (Admin) ──────────────────────────────────────────────────────
+
+/**
+ * DELETE /api/admin/users/:id
+ * Permanently delete a citizen user and all their data (complaints, notifications)
+ */
+const deleteUser = async (req, res) => {
+    const { city } = req.user;
+    const { id } = req.params;
+
+    try {
+        // Verify user belongs to admin's city
+        const [users] = await pool.query('SELECT id, username, email FROM users WHERE id = ? AND city = ?', [id, city]);
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found in your city.' });
+        }
+
+        const user = users[0];
+
+        // Delete user — CASCADE will remove complaints and notifications automatically
+        await pool.query('DELETE FROM users WHERE id = ?', [id]);
+
+        res.json({ success: true, message: `User "${user.username}" and all their data have been permanently removed.` });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
 module.exports = {
     getDashboardStats, getAllComplaints, updateComplaintStatus,
-    getCityUsers, getComplaintDetail, getDuplicates
+    getCityUsers, getComplaintDetail, getDuplicates, deleteUser
 };

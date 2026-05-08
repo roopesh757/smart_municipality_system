@@ -239,4 +239,42 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { citizenRegister, citizenLogin, adminRegister, adminLogin, getMe };
+/**
+ * DELETE /api/auth/me - Delete own account (citizen only)
+ * Requires password confirmation
+ */
+const deleteMyAccount = async (req, res) => {
+    const { password } = req.body;
+
+    if (!password) {
+        return res.status(400).json({ success: false, message: 'Password is required to confirm account deletion.' });
+    }
+
+    if (req.user.role !== 'citizen') {
+        return res.status(403).json({ success: false, message: 'Only citizens can delete their own account from here.' });
+    }
+
+    try {
+        // Fetch user to verify password
+        const [users] = await pool.query('SELECT * FROM users WHERE id = ? AND is_active = 1', [req.user.id]);
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'Account not found.' });
+        }
+
+        const user = users[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(403).json({ success: false, message: 'Incorrect password. Please enter your correct password.' });
+        }
+
+        // Delete user — CASCADE will remove complaints and notifications automatically
+        await pool.query('DELETE FROM users WHERE id = ?', [req.user.id]);
+
+        res.json({ success: true, message: 'Your account and all associated data have been permanently deleted.' });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    }
+};
+
+module.exports = { citizenRegister, citizenLogin, adminRegister, adminLogin, getMe, deleteMyAccount };

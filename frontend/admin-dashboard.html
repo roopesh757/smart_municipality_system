@@ -208,6 +208,29 @@
     </div>
 </div>
 
+<!-- Delete User Confirm Modal -->
+<div class="modal-overlay" id="delete-user-modal">
+    <div class="modal" style="max-width:440px;">
+        <div class="modal-header">
+            <h3>⚠️ Remove User?</h3>
+            <button class="modal-close" onclick="closeModal('delete-user-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <p>This will <strong>permanently remove</strong> the user <strong id="delete-user-name"></strong> and all their associated data including:</p>
+            <ul style="margin:10px 0 16px 20px;color:var(--text-mid);font-size:0.9rem;line-height:1.7;">
+                <li>All complaints submitted by this user</li>
+                <li>All notifications for this user</li>
+                <li>User profile and login credentials</li>
+            </ul>
+            <p style="color:#ef4444;font-weight:600;font-size:0.88rem;">This action cannot be undone!</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('delete-user-modal')">Cancel</button>
+            <button class="btn btn-danger" id="confirm-delete-user-btn">🗑 Remove User</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast-container" class="toast-container"></div>
 
 <script src="js/translations.js"></script>
@@ -521,7 +544,7 @@ async function loadCityUsers() {
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th>Name</th><th>Email</th><th>Mobile</th><th>Ward</th><th>Complaints</th><th>Joined</th></tr>
+                        <tr><th>Name</th><th>Email</th><th>Mobile</th><th>Ward</th><th>Complaints</th><th>Joined</th><th>Action</th></tr>
                     </thead>
                     <tbody>
                         ${users.map(u => `
@@ -532,6 +555,7 @@ async function loadCityUsers() {
                                 <td>${u.ward}</td>
                                 <td><span class="badge badge-submitted">${u.complaint_count} complaints</span></td>
                                 <td>${formatDate(u.created_at)}</td>
+                                <td><button class="btn btn-danger btn-sm" onclick="confirmDeleteUser(${u.id}, '${u.username.replace(/'/g, "\\'")}')">Remove</button></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -593,6 +617,32 @@ function renderAdminComplaintCard(c) {
         </div>
     `;
 }
+
+// ─── Delete User ──────────────────────────────────────────────
+let deleteUserTargetId = null;
+function confirmDeleteUser(id, username) {
+    deleteUserTargetId = id;
+    document.getElementById('delete-user-name').textContent = username;
+    openModal('delete-user-modal');
+}
+
+document.getElementById('confirm-delete-user-btn').addEventListener('click', async () => {
+    if (!deleteUserTargetId) return;
+    const btn = document.getElementById('confirm-delete-user-btn');
+    setLoading(btn, true);
+    try {
+        const data = await API.delete(`/admin/users/${deleteUserTargetId}`);
+        closeModal('delete-user-modal');
+        showToast('User Removed', data.message, 'success');
+        loadCityUsers();
+        loadAdminOverview();
+    } catch (err) {
+        showToast('Error', err.message || 'Failed to remove user.', 'error');
+    } finally {
+        setLoading(btn, false);
+        deleteUserTargetId = null;
+    }
+});
 
 // ─── Init ─────────────────────────────────────────────────────
 loadAdminOverview();
