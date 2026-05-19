@@ -33,7 +33,7 @@ const Auth = {
             window.location.href = '/login.html';
             return false;
         }
-        if (role && Auth.getRole() !== role && Auth.getRole() !== 'superadmin') {
+        if (role && Auth.getRole() !== role) {
             window.location.href = '/login.html';
             return false;
         }
@@ -66,7 +66,7 @@ const API = {
     get: (endpoint) => API._request('GET', endpoint),
     post: (endpoint, body) => API._request('POST', endpoint, body),
     put: (endpoint, body) => API._request('PUT', endpoint, body),
-    delete: (endpoint) => API._request('DELETE', endpoint),
+    delete: (endpoint, body) => API._request('DELETE', endpoint, body),
     postForm: (endpoint, formData) => API._request('POST', endpoint, formData, true),
 };
 

@@ -42,7 +42,7 @@ const citizenOnly = (req, res, next) => {
  * Admin-only route guard
  */
 const adminOnly = (req, res, next) => {
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin') {
         return res.status(403).json({ success: false, message: 'Access denied. Admins only.' });
     }
     next();

@@ -17,7 +17,8 @@ const getDashboardStats = async (req, res) => {
                 SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
                 SUM(CASE WHEN status = 'Solved' THEN 1 ELSE 0 END) as solved,
                 SUM(CASE WHEN status = 'Rejected' THEN 1 ELSE 0 END) as rejected,
-                SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) as duplicates,
+                SUM(CASE WHEN supporter_count > 0 THEN 1 ELSE 0 END) as high_impact,
+                SUM(COALESCE(supporter_count, 0)) as total_supporters,
                 SUM(CASE WHEN escalated = 1 THEN 1 ELSE 0 END) as escalated,
                 SUM(CASE WHEN priority = 'Urgent' THEN 1 ELSE 0 END) as urgent
              FROM complaints WHERE city = ?`,
@@ -26,9 +27,9 @@ const getDashboardStats = async (req, res) => {
 
         const [userCount] = await pool.query('SELECT COUNT(*) as total FROM users WHERE city = ?', [city]);
 
-        // Ward-wise breakdown
-        const [wardStats] = await pool.query(
-            `SELECT ward, COUNT(*) as total,
+        // Area-wise breakdown
+        const [areaStats] = await pool.query(
+            `SELECT ward as area, COUNT(*) as total,
                     SUM(CASE WHEN status = 'Solved' THEN 1 ELSE 0 END) as solved
              FROM complaints WHERE city = ? GROUP BY ward ORDER BY total DESC`,
             [city]
@@ -45,7 +46,7 @@ const getDashboardStats = async (req, res) => {
             success: true,
             stats: stats[0],
             userCount: userCount[0].total,
-            wardStats,
+            areaStats,
             typeStats
         });
     } catch (error) {
@@ -61,7 +62,7 @@ const getDashboardStats = async (req, res) => {
  */
 const getAllComplaints = async (req, res) => {
     const { city } = req.user;
-    const { status, ward, priority, problem_type, page = 1, limit = 20, sort = 'newest' } = req.query;
+    const { status, area, priority, problem_type, page = 1, limit = 20, sort = 'newest' } = req.query;
 
     try {
         let query = `
@@ -71,7 +72,8 @@ const getAllComplaints = async (req, res) => {
         const params = [city];
 
         if (status) { query += ' AND c.status = ?'; params.push(status); }
-        if (ward) { query += ' AND c.ward = ?'; params.push(ward); }
+        else { query += " AND c.status != 'Solved'"; } // Hide solved from default view
+        if (area)   { query += ' AND c.ward = ?';   params.push(area); }
         if (priority) { query += ' AND c.priority = ?'; params.push(priority); }
         if (problem_type) { query += ' AND c.problem_type = ?'; params.push(problem_type); }
 
@@ -83,7 +85,7 @@ const getAllComplaints = async (req, res) => {
         const total = countRows[0].total;
 
         // Sort
-        const sortMap = { newest: 'c.created_at DESC', oldest: 'c.created_at ASC', priority: "FIELD(c.priority,'Urgent','High','Medium','Low')" };
+        const sortMap = { newest: 'c.created_at DESC', oldest: 'c.created_at ASC', priority: "FIELD(c.priority,'Urgent','High','Medium','Low')", impact: 'c.supporter_count DESC' };
         query += ` ORDER BY ${sortMap[sort] || 'c.created_at DESC'}`;
 
         // Paginate
@@ -92,6 +94,8 @@ const getAllComplaints = async (req, res) => {
         params.push(parseInt(limit), offset);
 
         const [complaints] = await pool.query(query, params);
+        // Alias ward as area for frontend consistency
+        complaints.forEach(c => { c.area = c.ward; });
 
         res.json({
             success: true,
@@ -143,12 +147,34 @@ const updateComplaintStatus = async (req, res) => {
             'Rejected': `Your complaint #${id} has been rejected. ${admin_notes ? 'Reason: ' + admin_notes : ''}`
         };
 
+        // Notify the original complaint owner
         await pool.query(
             'INSERT INTO notifications (user_id, complaint_id, type, title, message) VALUES (?, ?, ?, ?, ?)',
             [complaint.user_id, id, notifType,
              `Complaint Status Updated: ${status}`,
              notifMessages[status] || `Complaint #${id} status updated to ${status}.`]
         );
+
+        // Notify all supporters of the complaint
+        const [supporters] = await pool.query(
+            'SELECT user_id FROM complaint_supporters WHERE complaint_id = ?',
+            [id]
+        );
+
+        if (supporters.length > 0) {
+            const notifValues = supporters.map(s =>
+                [s.user_id, id, notifType,
+                 `Joined Complaint Status Updated: ${status}`,
+                 notifMessages[status] || `Complaint #${id} you joined has been updated to ${status}.`]
+            );
+
+            for (const vals of notifValues) {
+                await pool.query(
+                    'INSERT INTO notifications (user_id, complaint_id, type, title, message) VALUES (?, ?, ?, ?, ?)',
+                    vals
+                );
+            }
+        }
 
         res.json({ success: true, message: `Complaint status updated to "${status}".` });
     } catch (error) {
@@ -161,19 +187,36 @@ const updateComplaintStatus = async (req, res) => {
 
 /**
  * GET /api/admin/users
+ * Returns:
+ *  - Local residents (users registered in the admin's city)
+ *  - Cross-municipality reporters (users who submitted complaints to this city but are from elsewhere)
  */
 const getCityUsers = async (req, res) => {
     const { city } = req.user;
     try {
-        const [users] = await pool.query(
-            `SELECT u.id, u.username, u.email, u.mobile, u.ward, u.created_at,
-                    COUNT(c.id) as complaint_count
+        // Local residents
+        const [localUsers] = await pool.query(
+            `SELECT u.id, u.username, u.email, u.mobile, u.ward as area, u.city as home_city, u.created_at,
+                    COUNT(c.id) as complaint_count, 1 as is_local
              FROM users u
              LEFT JOIN complaints c ON u.id = c.user_id
              WHERE u.city = ?
              GROUP BY u.id ORDER BY u.created_at DESC`,
             [city]
         );
+
+        // Cross-municipality reporters (users from other cities who filed complaints here)
+        const [crossUsers] = await pool.query(
+            `SELECT u.id, u.username, u.email, u.mobile, u.ward as area, u.city as home_city, u.created_at,
+                    COUNT(c.id) as complaint_count, 0 as is_local
+             FROM users u
+             INNER JOIN complaints c ON u.id = c.user_id AND c.city = ?
+             WHERE u.city != ?
+             GROUP BY u.id ORDER BY complaint_count DESC`,
+            [city, city]
+        );
+
+        const users = [...localUsers, ...crossUsers];
         res.json({ success: true, users });
     } catch (error) {
         console.error('Get city users error:', error);
@@ -192,7 +235,7 @@ const getComplaintDetail = async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT c.*, u.username as citizen_name, u.mobile as citizen_mobile,
-                    u.email as citizen_email, u.ward as citizen_ward
+                    u.email as citizen_email
              FROM complaints c JOIN users u ON c.user_id = u.id
              WHERE c.id = ? AND c.city = ?`,
             [id, city]
@@ -200,30 +243,46 @@ const getComplaintDetail = async (req, res) => {
         if (rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Complaint not found.' });
         }
-        res.json({ success: true, complaint: rows[0] });
+        const complaint = rows[0];
+        complaint.area = complaint.ward;
+
+        // Get supporter details
+        const [supporters] = await pool.query(
+            `SELECT u.username, u.email, u.mobile, u.ward as area, u.city as home_city, cs.joined_at
+             FROM complaint_supporters cs
+             JOIN users u ON cs.user_id = u.id
+             WHERE cs.complaint_id = ?
+             ORDER BY cs.joined_at DESC`,
+            [id]
+        );
+
+        res.json({ success: true, complaint, supporters });
     } catch (error) {
         console.error('Get complaint detail error:', error);
         res.status(500).json({ success: false, message: 'Server error.' });
     }
 };
 
-// ─── Get Duplicate Complaints ─────────────────────────────────────────────────
+// ─── Get High Impact Complaints ───────────────────────────────────────────────
 
 /**
- * GET /api/admin/duplicates
+ * GET /api/admin/high-impact
+ * Returns complaints that have supporters (public impact).
  */
-const getDuplicates = async (req, res) => {
+const getHighImpactComplaints = async (req, res) => {
     const { city } = req.user;
     try {
-        const [duplicates] = await pool.query(
+        const [complaints] = await pool.query(
             `SELECT c.*, u.username as citizen_name
              FROM complaints c JOIN users u ON c.user_id = u.id
-             WHERE c.city = ? AND c.is_duplicate = 1 ORDER BY c.created_at DESC`,
+             WHERE c.city = ? AND c.supporter_count > 0
+             ORDER BY c.supporter_count DESC, c.created_at DESC`,
             [city]
         );
-        res.json({ success: true, duplicates });
+        complaints.forEach(c => { c.area = c.ward; });
+        res.json({ success: true, complaints });
     } catch (error) {
-        console.error('Get duplicates error:', error);
+        console.error('Get high impact complaints error:', error);
         res.status(500).json({ success: false, message: 'Server error.' });
     }
 };
@@ -259,5 +318,5 @@ const deleteUser = async (req, res) => {
 
 module.exports = {
     getDashboardStats, getAllComplaints, updateComplaintStatus,
-    getCityUsers, getComplaintDetail, getDuplicates, deleteUser
+    getCityUsers, getComplaintDetail, getHighImpactComplaints, deleteUser
 };

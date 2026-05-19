@@ -1,6 +1,6 @@
 # 🏛️ Smart Municipality Problem Reporting System
 
-A full-stack, production-ready civic web application that digitizes complaint management with image uploads, duplicate detection, real-time notifications, multi-language support, and admin analytics.
+A full-stack, production-ready civic web application that digitizes complaint management with image uploads, complaint joining system, real-time notifications, and admin analytics.
 
 ---
 
@@ -43,9 +43,12 @@ smart-municipality/
 │   ├── share.html                     # Public shared complaint view
 │   ├── css/
 │   │   └── style.css                  # Full design system
+│   ├── data/
+│   │   └── locations.json             # Location data (State/District/Taluk/Area)
+│   ├── images/
+│   │   └── municipality-logo.png      # Municipality logo
 │   └── js/
-│       ├── api.js                     # HTTP client, Auth, utilities
-│       └── translations.js            # EN + Hindi support
+│       └── api.js                     # HTTP client, Auth, utilities
 │
 └── database/
     └── schema.sql                     # Full DB schema + seed data
@@ -62,7 +65,7 @@ smart-municipality/
 | Database             | MySQL 8+                        |
 | Auth                 | JWT (jsonwebtoken) + bcryptjs   |
 | File Uploads         | Multer                          |
-| Internationalisation | Custom EN + Hindi toggle        |
+
 
 ---
 
@@ -139,26 +142,31 @@ http://localhost:5000
 ## 📊 Database Schema Summary
 
 ```
-users              → Citizen accounts (id, username, email, password, mobile, city, ward, role)
-admins             → Admin accounts (id, username, email, password, city, role, is_active)
-complaints         → Core complaint table (problem_type ENUM 10 types, priority, status,
-                     image_path, attempt_count, is_duplicate, duplicate_of,
-                     share_token UUID, escalated, resolved_at, admin_notes)
-notifications      → Per-user notification feed (type ENUM, title, message, is_read)
+users                → Citizen accounts (id, username, email, password, mobile, state, district, taluk, area, city, role)
+admins               → Admin accounts (id, username, email, password, city, role, is_active)
+complaints           → Core complaint table (problem_type ENUM 10 types, priority, status,
+                       image_path, attempt_count, supporter_count,
+                       share_token UUID, escalated, resolved_at, admin_notes)
+complaint_supporters → Join table linking supporters to complaints (complaint_id, user_id, joined_at)
+notifications        → Per-user notification feed (type ENUM, title, message, is_read)
 ```
 
 ---
 
 ## 🔐 Demo Credentials
 
-Register accounts through the UI after running `schema.sql`.
+Register citizen accounts through the UI after running `schema.sql`.
 
-| Role    | Register URL                        | Tab                  |
-| ------- | ----------------------------------- | -------------------- |
-| Citizen | http://localhost:5000/register.html | Default              |
-| Admin   | http://localhost:5000/register.html | "Admin Register" tab |
+| Role    | City              | Email                              | Password   |
+| ------- | ----------------- | ---------------------------------- | ---------- |
+| Admin   | Udupi             | admin@municipality.com             | Admin@123  |
+| Admin   | Bengaluru Urban   | admin.bengaluru@municipality.com   | Admin@123  |
+| Admin   | Mysuru            | admin.mysuru@municipality.com      | Admin@123  |
+| Admin   | Dakshina Kannada  | admin.dk@municipality.com          | Admin@123  |
+| Admin   | Shivamogga        | admin.shivamogga@municipality.com  | Admin@123  |
+| Citizen | —                 | Register at `/register.html`       | —          |
 
-> ⚠️ The hashed passwords in schema.sql are placeholders only. Always register fresh accounts before use!
+> ⚠️ Admin accounts are not self-registered. Add admins directly to the `admins` table in MySQL.
 
 ---
 
@@ -170,31 +178,35 @@ Register accounts through the UI after running `schema.sql`.
 | ------ | ----------------- | -------- | ---------------- |
 | POST   | /citizen/register | Public   | Register citizen |
 | POST   | /citizen/login    | Public   | Citizen login    |
-| POST   | /admin/register   | Public   | Register admin   |
 | POST   | /admin/login      | Public   | Admin login      |
 | GET    | /me               | Any role | Get current user |
+| DELETE | /me               | Citizen  | Delete account   |
 
 ### Complaints `/api/complaints`
 
 | Method | Endpoint       | Auth    | Description                                |
 | ------ | -------------- | ------- | ------------------------------------------ |
 | POST   | /              | Citizen | Submit new complaint (multipart/form-data) |
-| GET    | /my            | Citizen | Get my complaints                          |
-| GET    | /:id           | Any     | Single complaint detail                    |
-| DELETE | /:id           | Citizen | Delete complaint                           |
+| POST   | /check-match   | Citizen | Check for matching complaints before submit|
+| GET    | /my            | Citizen | Get own + joined complaints                |
+| GET    | /:id           | Citizen | Single complaint detail (owner or supporter)|
+| DELETE | /:id           | Citizen | Delete own complaint                       |
+| POST   | /:id/join      | Citizen | Join existing complaint as supporter       |
+| POST   | /:id/leave     | Citizen | Leave a joined complaint                   |
 | POST   | /:id/reattempt | Citizen | Re-submit rejected complaint               |
 | GET    | /share/:token  | Public  | Public share view                          |
 
 ### Admin `/api/admin`
 
-| Method | Endpoint               | Auth  | Description                        |
-| ------ | ---------------------- | ----- | ---------------------------------- |
-| GET    | /dashboard             | Admin | Dashboard stats                    |
-| GET    | /complaints            | Admin | All city complaints (with filters) |
-| GET    | /complaints/:id        | Admin | Complaint detail                   |
-| PUT    | /complaints/:id/status | Admin | Update status + notify citizen     |
-| GET    | /users                 | Admin | City users list                    |
-| GET    | /duplicates            | Admin | Duplicate complaints               |
+| Method | Endpoint               | Auth  | Description                              |
+| ------ | ---------------------- | ----- | ---------------------------------------- |
+| GET    | /dashboard             | Admin | Dashboard stats (incl. high impact)      |
+| GET    | /complaints            | Admin | All city complaints (with filters/sort)  |
+| GET    | /complaints/:id        | Admin | Complaint detail + supporter list        |
+| PUT    | /complaints/:id/status | Admin | Update status + notify all supporters    |
+| GET    | /users                 | Admin | City users list                          |
+| DELETE | /users/:id             | Admin | Delete a citizen account                 |
+| GET    | /high-impact           | Admin | Complaints with multiple supporters      |
 
 ### Notifications `/api/notifications`
 
@@ -208,20 +220,21 @@ Register accounts through the UI after running `schema.sql`.
 
 ## ⚡ Key Features Explained
 
-**Duplicate Detection**
-When a new complaint is submitted, the system checks for an existing complaint with the same `location` and `problem_type` combination. Flagged complaints have `is_duplicate = true` and a `duplicate_of` foreign key pointing to the original, preventing redundant admin workload.
+**Complaint Joining System**
+When a citizen submits a complaint, the system checks for existing active complaints with the same `problem_type`, `city`, and `area`. If a match is found, the citizen is shown the existing complaint and offered a "Join Existing Complaint" button. Joining links the citizen as a supporter — they receive all status updates and resolution notifications without creating a duplicate entry. The `supporter_count` tracks how many citizens are affected, and complaints auto-escalate in priority when many users join (5+ → High, 10+ → Urgent). Admins see consolidated complaints with full supporter lists in the "Public Impact" section.
 
 **Re-attempt & Escalation**
 Citizens may re-submit a rejected complaint up to 2 times (`attempt_count` field). On a second failure, the complaint is automatically marked as `escalated = true`, triggering an escalation message and surfacing the complaint prominently in the admin dashboard.
 
+**Location-Based Registration**
+Citizens select their location through cascading dropdowns (State → District → Taluk → Area) loaded from `frontend/data/locations.json`. This ensures consistent location data and routes complaints to the correct municipality admin.
+
 **City-Scoped Admin**
-Admins are bound to their registered city at account creation. All dashboard queries, complaint listings, and user lists are filtered by `city` — an admin from Mumbai never sees Chennai's data, eliminating cross-city data leakage without any extra middleware.
+Admins are bound to their city (district) at account creation via SQL. All dashboard queries, complaint listings, and user lists are filtered by `city` — an admin from Udupi never sees Bengaluru's data, eliminating cross-city data leakage without any extra middleware.
 
 **Public Share Link**
 Each complaint is assigned a UUID `share_token` on creation. The `/api/complaints/share/:token` endpoint is fully public — no JWT required — allowing citizens to share complaint status with others via a clean URL without exposing private account details.
 
-**Multi-Language Support**
-Language toggle is handled client-side via `translations.js`, which holds a flat key-value map for both English and Hindi. Switching language re-renders all `data-i18n` attribute targets instantly with no page reload.
 
 ---
 
@@ -242,12 +255,12 @@ Language toggle is handled client-side via `translations.js`, which holds a flat
 ## 🔮 Future Enhancements
 
 - WhatsApp/SMS notifications via Twilio
-- Live complaint map with ward-level hotspots
+- Live complaint map with area-level hotspots
 - Auto-categorisation using NLP
 - SLA tracking per complaint type
-- Ward councillor read-only portal
+- Area councillor read-only portal
 - Complaint upvoting by citizens
 - Offline PWA support
 - Public transparency dashboard
-- Multi-city superadmin panel
+- Multi-city admin panel
 - PDF / Excel report export

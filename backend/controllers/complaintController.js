@@ -17,19 +17,210 @@ const PROBLEM_TYPES = [
     'Water leakage / pipeline break'
 ];
 
+// ─── CITIZEN: Check for Matching Complaints ───────────────────────────────────
+
+/**
+ * POST /api/complaints/check-match
+ * Before submitting, check if a similar complaint exists in the same area.
+ * Returns matching complaint details if found, so user can choose to join.
+ */
+const checkMatchingComplaint = async (req, res) => {
+    const { problem_type, complaint_district, complaint_area, complaint_state } = req.body;
+    const userId = req.user.id;
+
+    if (!problem_type || !complaint_district || !complaint_area) {
+        return res.status(400).json({ success: false, message: 'Problem type, city, and area are required.' });
+    }
+
+    try {
+        // ── Same-user duplicate prevention ──
+        // Check if this user already owns an active complaint with matching criteria
+        const [ownActive] = await pool.query(
+            `SELECT id, title FROM complaints
+             WHERE user_id = ? AND city = ? AND ward = ? AND problem_type = ?
+             AND status NOT IN ('Solved', 'Rejected')
+             LIMIT 1`,
+            [userId, complaint_district, complaint_area, problem_type]
+        );
+
+        if (ownActive.length > 0) {
+            return res.json({
+                success: true,
+                matchFound: false,
+                userAlreadyActive: true,
+                existingComplaintId: ownActive[0].id,
+                message: 'You have already reported this complaint previously.'
+            });
+        }
+
+        // Check if this user has already joined an active complaint with matching criteria
+        const [joinedActive] = await pool.query(
+            `SELECT c.id, c.title FROM complaints c
+             INNER JOIN complaint_supporters cs ON c.id = cs.complaint_id
+             WHERE cs.user_id = ? AND c.city = ? AND c.ward = ? AND c.problem_type = ?
+             AND c.status NOT IN ('Solved', 'Rejected')
+             LIMIT 1`,
+            [userId, complaint_district, complaint_area, problem_type]
+        );
+
+        if (joinedActive.length > 0) {
+            return res.json({
+                success: true,
+                matchFound: false,
+                userAlreadyActive: true,
+                existingComplaintId: joinedActive[0].id,
+                message: 'You have already joined this complaint previously.'
+            });
+        }
+
+        // ── Find other users' active complaints to potentially join ──
+        const [matches] = await pool.query(
+            `SELECT c.id, c.title, c.description, c.problem_type, c.location, c.ward, c.city,
+                    c.priority, c.status, c.supporter_count, c.created_at, c.updated_at,
+                    u.username as citizen_name
+             FROM complaints c
+             JOIN users u ON c.user_id = u.id
+             WHERE c.city = ? AND c.ward = ? AND c.problem_type = ?
+             AND c.status NOT IN ('Solved', 'Rejected')
+             AND c.user_id != ?
+             AND c.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
+             ORDER BY c.supporter_count DESC, c.created_at DESC
+             LIMIT 1`,
+            [complaint_district, complaint_area, problem_type, userId]
+        );
+
+        if (matches.length === 0) {
+            return res.json({ success: true, matchFound: false });
+        }
+
+        const match = matches[0];
+        match.area = match.ward;
+
+        // Check if user already joined this complaint (safety check)
+        const [existing] = await pool.query(
+            'SELECT id FROM complaint_supporters WHERE complaint_id = ? AND user_id = ?',
+            [match.id, userId]
+        );
+
+        res.json({
+            success: true,
+            matchFound: true,
+            alreadyJoined: existing.length > 0,
+            complaint: match
+        });
+    } catch (error) {
+        console.error('Check matching complaint error:', error);
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
+// ─── CITIZEN: Join Existing Complaint ─────────────────────────────────────────
+
+/**
+ * POST /api/complaints/:id/join
+ * Link the user to an existing complaint as a supporter/affected citizen.
+ */
+const joinComplaint = async (req, res) => {
+    const userId = req.user.id;
+    const complaintId = req.params.id;
+
+    try {
+        // Verify complaint exists and is active
+        const [rows] = await pool.query(
+            `SELECT c.*, u.username as citizen_name
+             FROM complaints c JOIN users u ON c.user_id = u.id
+             WHERE c.id = ? AND c.status NOT IN ('Solved', 'Rejected')`,
+            [complaintId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Complaint not found or already resolved.' });
+        }
+
+        const complaint = rows[0];
+
+        // Prevent owner from joining their own complaint
+        if (complaint.user_id === userId) {
+            return res.status(400).json({ success: false, message: 'You cannot join your own complaint.' });
+        }
+
+        // Check if already joined
+        const [existing] = await pool.query(
+            'SELECT id FROM complaint_supporters WHERE complaint_id = ? AND user_id = ?',
+            [complaintId, userId]
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, message: 'You have already joined this complaint.' });
+        }
+
+        // Add user as supporter
+        await pool.query(
+            'INSERT INTO complaint_supporters (complaint_id, user_id) VALUES (?, ?)',
+            [complaintId, userId]
+        );
+
+        // Increment supporter count
+        await pool.query(
+            'UPDATE complaints SET supporter_count = supporter_count + 1 WHERE id = ?',
+            [complaintId]
+        );
+
+        // Get updated supporter count
+        const [updated] = await pool.query('SELECT supporter_count FROM complaints WHERE id = ?', [complaintId]);
+        const newCount = updated[0].supporter_count;
+
+        // Auto-escalate priority if many supporters join
+        // 5+ supporters → High, 10+ → Urgent
+        if (newCount >= 10 && complaint.priority !== 'Urgent') {
+            await pool.query("UPDATE complaints SET priority = 'Urgent' WHERE id = ?", [complaintId]);
+        } else if (newCount >= 5 && (complaint.priority === 'Low' || complaint.priority === 'Medium')) {
+            await pool.query("UPDATE complaints SET priority = 'High' WHERE id = ?", [complaintId]);
+        }
+
+        // Notification for the joining user
+        await pool.query(
+            'INSERT INTO notifications (user_id, complaint_id, type, title, message) VALUES (?, ?, ?, ?, ?)',
+            [userId, complaintId, 'complaint_joined',
+             'Joined Existing Complaint',
+             `You have joined complaint #${complaintId}: "${complaint.title}" in ${complaint.ward}, ${complaint.city}. You will receive status updates and resolution notifications.`]
+        );
+
+        // Notification for the original complaint owner
+        await pool.query(
+            'INSERT INTO notifications (user_id, complaint_id, type, title, message) VALUES (?, ?, ?, ?, ?)',
+            [complaint.user_id, complaintId, 'complaint_joined',
+             'New Supporter Joined Your Complaint',
+             `Another citizen has joined your complaint #${complaintId}: "${complaint.title}". Total affected citizens: ${newCount + 1} (including you).`]
+        );
+
+        res.json({
+            success: true,
+            message: 'Successfully joined the complaint! You will receive updates.',
+            supporterCount: newCount
+        });
+    } catch (error) {
+        console.error('Join complaint error:', error);
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
 // ─── CITIZEN: Submit Complaint ────────────────────────────────────────────────
 
 /**
  * POST /api/complaints
  */
 const submitComplaint = async (req, res) => {
-    const { title, description, problem_type, location, ward, priority } = req.body;
+    const { title, description, problem_type, location, priority,
+            complaint_district, complaint_area } = req.body;
     const userId = req.user.id;
-    const userCity = req.user.city;
 
     // Validation
     if (!title || !description || !problem_type || !location) {
         return res.status(400).json({ success: false, message: 'Title, description, problem type, and location are required.' });
+    }
+    if (!complaint_district || !complaint_area) {
+        return res.status(400).json({ success: false, message: 'Please select the district and area for the complaint.' });
     }
     if (!PROBLEM_TYPES.includes(problem_type)) {
         return res.status(400).json({ success: false, message: 'Invalid problem type.' });
@@ -37,62 +228,78 @@ const submitComplaint = async (req, res) => {
 
     const imagePath = req.file ? req.file.filename : null;
 
-    try {
-        // Get user's ward if not provided
-        const [userRows] = await pool.query('SELECT ward, city FROM users WHERE id = ?', [userId]);
-        const userWard = ward || userRows[0]?.ward || '';
-        const city = userCity || userRows[0]?.city || '';
+    // Route to the selected city and area — enables cross-municipality reporting
+    const city = complaint_district;
+    const ward = complaint_area;
 
-        // --- Duplicate Detection ---
-        const [duplicates] = await pool.query(
+    try {
+        // ── Same-user duplicate prevention (server-side safeguard) ──
+        const [ownActive] = await pool.query(
             `SELECT id FROM complaints
-             WHERE location = ? AND problem_type = ?
+             WHERE user_id = ? AND city = ? AND ward = ? AND problem_type = ?
              AND status NOT IN ('Solved', 'Rejected')
-             AND user_id != ?
-             AND created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
              LIMIT 1`,
-            [location, problem_type, userId]
+            [userId, city, ward, problem_type]
         );
 
-        const isDuplicate = duplicates.length > 0;
-        const duplicateOf = isDuplicate ? duplicates[0].id : null;
+        if (ownActive.length > 0) {
+            // Clean up uploaded file since we're rejecting
+            if (imagePath) {
+                const filePath = path.join(__dirname, '../uploads', imagePath);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
+            return res.status(400).json({
+                success: false,
+                message: 'You have already reported or joined this complaint previously.',
+                existingComplaintId: ownActive[0].id
+            });
+        }
 
+        const [joinedActive] = await pool.query(
+            `SELECT c.id FROM complaints c
+             INNER JOIN complaint_supporters cs ON c.id = cs.complaint_id
+             WHERE cs.user_id = ? AND c.city = ? AND c.ward = ? AND c.problem_type = ?
+             AND c.status NOT IN ('Solved', 'Rejected')
+             LIMIT 1`,
+            [userId, city, ward, problem_type]
+        );
+
+        if (joinedActive.length > 0) {
+            if (imagePath) {
+                const filePath = path.join(__dirname, '../uploads', imagePath);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
+            return res.status(400).json({
+                success: false,
+                message: 'You have already joined this complaint previously.',
+                existingComplaintId: joinedActive[0].id
+            });
+        }
         // Generate share token
         const shareToken = uuidv4().replace(/-/g, '');
 
         const [result] = await pool.query(
             `INSERT INTO complaints
-             (user_id, title, description, problem_type, location, ward, city, priority, status, image_path, is_duplicate, duplicate_of, share_token)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?, ?)`,
+             (user_id, title, description, problem_type, location, ward, city, priority, status, image_path, share_token)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?)`,
             [userId, title.trim(), description.trim(), problem_type, location.trim(),
-             userWard, city, priority || 'Medium', imagePath, isDuplicate ? 1 : 0, duplicateOf, shareToken]
+             ward, city, priority || 'Medium', imagePath, shareToken]
         );
 
         const complaintId = result.insertId;
 
-        // Notification: Submission
+        // Notification: Submission — include area and municipality for clarity
         await pool.query(
             'INSERT INTO notifications (user_id, complaint_id, type, title, message) VALUES (?, ?, ?, ?, ?)',
             [userId, complaintId, 'complaint_submitted',
              'Complaint Submitted Successfully',
-             `Your complaint "${title}" has been submitted and is being reviewed. Complaint ID: #${complaintId}`]
+             `Your complaint "${title}" has been submitted to ${city} municipality (${ward} area) and is being reviewed. Complaint ID: #${complaintId}`]
         );
-
-        // Duplicate notification
-        if (isDuplicate) {
-            await pool.query(
-                'INSERT INTO notifications (user_id, complaint_id, type, title, message) VALUES (?, ?, ?, ?, ?)',
-                [userId, complaintId, 'duplicate',
-                 'Similar Complaint Found',
-                 `A similar complaint already exists for this location. Your complaint has been marked and will be tracked together.`]
-            );
-        }
 
         res.status(201).json({
             success: true,
             message: 'Complaint submitted successfully!',
             complaintId,
-            isDuplicate,
             shareToken
         });
     } catch (error) {
@@ -106,7 +313,8 @@ const submitComplaint = async (req, res) => {
     }
 };
 
-// ─── CITIZEN: Get My Complaints ───────────────────────────────────────────────
+
+// ─── CITIZEN: Get My Complaints (includes joined complaints) ──────────────────
 
 /**
  * GET /api/complaints/my
@@ -116,28 +324,45 @@ const getMyComplaints = async (req, res) => {
     const { status, page = 1, limit = 10 } = req.query;
 
     try {
-        let query = 'SELECT * FROM complaints WHERE user_id = ?';
-        const params = [userId];
+        // Get own complaints
+        let ownQuery = 'SELECT *, 0 as is_joined FROM complaints WHERE user_id = ?';
+        const ownParams = [userId];
 
         if (status) {
-            query += ' AND status = ?';
-            params.push(status);
+            ownQuery += ' AND status = ?';
+            ownParams.push(status);
         }
 
-        // Count total
-        const [countRows] = await pool.query(query.replace('SELECT *', 'SELECT COUNT(*) as total'), params);
-        const total = countRows[0].total;
+        // Get joined complaints
+        let joinedQuery = `
+            SELECT c.*, 1 as is_joined
+            FROM complaints c
+            INNER JOIN complaint_supporters cs ON c.id = cs.complaint_id
+            WHERE cs.user_id = ?`;
+        const joinedParams = [userId];
+
+        if (status) {
+            joinedQuery += ' AND c.status = ?';
+            joinedParams.push(status);
+        }
+
+        // Combine both queries using UNION
+        const combinedQuery = `(${ownQuery}) UNION (${joinedQuery}) ORDER BY created_at DESC`;
+        const combinedParams = [...ownParams, ...joinedParams];
+
+        const [allComplaints] = await pool.query(combinedQuery, combinedParams);
+        const total = allComplaints.length;
 
         // Paginate
         const offset = (parseInt(page) - 1) * parseInt(limit);
-        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), offset);
+        const paginated = allComplaints.slice(offset, offset + parseInt(limit));
 
-        const [complaints] = await pool.query(query, params);
+        // Alias ward as area for frontend consistency
+        paginated.forEach(c => { c.area = c.ward; });
 
         res.json({
             success: true,
-            complaints,
+            complaints: paginated,
             pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / limit) }
         });
     } catch (error) {
@@ -150,22 +375,52 @@ const getMyComplaints = async (req, res) => {
 
 /**
  * GET /api/complaints/:id
+ * Returns complaint if user is the owner OR a supporter.
  */
 const getComplaint = async (req, res) => {
     const userId = req.user.id;
     const complaintId = req.params.id;
 
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM complaints WHERE id = ? AND user_id = ?',
+        // Check if user is owner
+        const [ownRows] = await pool.query(
+            'SELECT *, 0 as is_joined FROM complaints WHERE id = ? AND user_id = ?',
             [complaintId, userId]
         );
 
-        if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Complaint not found.' });
+        if (ownRows.length > 0) {
+            const complaint = ownRows[0];
+            complaint.area = complaint.ward;
+
+            // Get supporters list
+            const [supporters] = await pool.query(
+                `SELECT u.username, cs.joined_at
+                 FROM complaint_supporters cs
+                 JOIN users u ON cs.user_id = u.id
+                 WHERE cs.complaint_id = ?
+                 ORDER BY cs.joined_at DESC`,
+                [complaintId]
+            );
+
+            return res.json({ success: true, complaint, supporters });
         }
 
-        res.json({ success: true, complaint: rows[0] });
+        // Check if user is a supporter
+        const [joinedRows] = await pool.query(
+            `SELECT c.*, 1 as is_joined
+             FROM complaints c
+             INNER JOIN complaint_supporters cs ON c.id = cs.complaint_id
+             WHERE c.id = ? AND cs.user_id = ?`,
+            [complaintId, userId]
+        );
+
+        if (joinedRows.length > 0) {
+            const complaint = joinedRows[0];
+            complaint.area = complaint.ward;
+            return res.json({ success: true, complaint, supporters: [] });
+        }
+
+        return res.status(404).json({ success: false, message: 'Complaint not found.' });
     } catch (error) {
         console.error('Get complaint error:', error);
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -193,6 +448,11 @@ const deleteComplaint = async (req, res) => {
 
         const complaint = rows[0];
 
+        // Only allow deleting active (non-solved) complaints
+        if (complaint.status === 'Solved') {
+            return res.status(400).json({ success: false, message: 'Use the acknowledge button to remove solved complaints.' });
+        }
+
         // Delete image file if exists
         if (complaint.image_path) {
             const filePath = path.join(__dirname, '../uploads', complaint.image_path);
@@ -204,6 +464,51 @@ const deleteComplaint = async (req, res) => {
         res.json({ success: true, message: 'Complaint deleted successfully.' });
     } catch (error) {
         console.error('Delete complaint error:', error);
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
+// ─── CITIZEN: Leave Joined Complaint ─────────────────────────────────────────
+
+/**
+ * POST /api/complaints/:id/leave
+ * Remove user from a complaint they previously joined.
+ */
+const leaveComplaint = async (req, res) => {
+    const userId = req.user.id;
+    const complaintId = req.params.id;
+
+    try {
+        // Check complaint status first
+        const [complaint] = await pool.query(
+            'SELECT status FROM complaints WHERE id = ?', [complaintId]
+        );
+        if (complaint.length > 0 && ['Solved', 'Rejected'].includes(complaint[0].status)) {
+            return res.status(400).json({ success: false, message: 'This complaint is closed. No modifications allowed.' });
+        }
+
+        const [existing] = await pool.query(
+            'SELECT id FROM complaint_supporters WHERE complaint_id = ? AND user_id = ?',
+            [complaintId, userId]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({ success: false, message: 'You have not joined this complaint.' });
+        }
+
+        await pool.query(
+            'DELETE FROM complaint_supporters WHERE complaint_id = ? AND user_id = ?',
+            [complaintId, userId]
+        );
+
+        await pool.query(
+            'UPDATE complaints SET supporter_count = GREATEST(supporter_count - 1, 0) WHERE id = ?',
+            [complaintId]
+        );
+
+        res.json({ success: true, message: 'You have left this complaint.' });
+    } catch (error) {
+        console.error('Leave complaint error:', error);
         res.status(500).json({ success: false, message: 'Server error.' });
     }
 };
@@ -279,7 +584,8 @@ const getSharedComplaint = async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT c.id, c.title, c.description, c.problem_type, c.location, c.ward, c.city,
-                    c.priority, c.status, c.image_path, c.attempt_count, c.created_at, c.updated_at,
+                    c.priority, c.status, c.image_path, c.attempt_count, c.supporter_count,
+                    c.created_at, c.updated_at,
                     u.username as citizen_name
              FROM complaints c JOIN users u ON c.user_id = u.id
              WHERE c.share_token = ?`,
@@ -290,14 +596,85 @@ const getSharedComplaint = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Shared complaint not found.' });
         }
 
-        res.json({ success: true, complaint: rows[0] });
+        const complaint = rows[0];
+        complaint.area = complaint.ward;
+        res.json({ success: true, complaint });
     } catch (error) {
         console.error('Shared complaint error:', error);
         res.status(500).json({ success: false, message: 'Server error.' });
     }
 };
 
+// ─── CITIZEN: Acknowledge Solved Complaint ────────────────────────────────────
+
+/**
+ * POST /api/complaints/:id/acknowledge
+ * Citizen confirms they've seen the resolved complaint.
+ * - Owner: deletes the complaint entirely (image + DB record)
+ * - Supporter: removes their supporter link only
+ * Once all supporters have acknowledged AND the owner acknowledges, the complaint is gone.
+ */
+const acknowledgeComplaint = async (req, res) => {
+    const userId = req.user.id;
+    const complaintId = req.params.id;
+
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM complaints WHERE id = ?',
+            [complaintId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Complaint not found.' });
+        }
+
+        const complaint = rows[0];
+
+        if (complaint.status !== 'Solved') {
+            return res.status(400).json({ success: false, message: 'Only solved complaints can be acknowledged.' });
+        }
+
+        // Check if user is a supporter
+        const [supporter] = await pool.query(
+            'SELECT id FROM complaint_supporters WHERE complaint_id = ? AND user_id = ?',
+            [complaintId, userId]
+        );
+
+        if (supporter.length > 0) {
+            // Supporter: remove their link
+            await pool.query(
+                'DELETE FROM complaint_supporters WHERE complaint_id = ? AND user_id = ?',
+                [complaintId, userId]
+            );
+            await pool.query(
+                'UPDATE complaints SET supporter_count = GREATEST(supporter_count - 1, 0) WHERE id = ?',
+                [complaintId]
+            );
+            return res.json({ success: true, message: 'Complaint acknowledged and removed from your dashboard.' });
+        }
+
+        // Check if user is the owner
+        if (complaint.user_id === userId) {
+            // Delete image file if exists
+            if (complaint.image_path) {
+                const filePath = path.join(__dirname, '../uploads', complaint.image_path);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
+            // Delete the complaint (CASCADE removes supporters + notifications)
+            await pool.query('DELETE FROM complaints WHERE id = ?', [complaintId]);
+            return res.json({ success: true, message: 'Complaint acknowledged and permanently removed.' });
+        }
+
+        return res.status(403).json({ success: false, message: 'You are not associated with this complaint.' });
+    } catch (error) {
+        console.error('Acknowledge complaint error:', error);
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
 module.exports = {
     submitComplaint, getMyComplaints, getComplaint,
-    deleteComplaint, reattemptComplaint, getSharedComplaint
+    deleteComplaint, reattemptComplaint, getSharedComplaint,
+    checkMatchingComplaint, joinComplaint, leaveComplaint,
+    acknowledgeComplaint
 };

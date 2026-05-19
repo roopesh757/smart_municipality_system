@@ -99,13 +99,15 @@ p { color: var(--text-mid); }
 .navbar-brand { display: flex; align-items: center; gap: 12px; }
 .navbar-brand .emblem {
     width: 42px; height: 42px;
-    background: linear-gradient(135deg, var(--amber), #f97316);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem; font-weight: 800;
-    color: var(--white);
-    box-shadow: 0 2px 8px rgba(245,158,11,0.4);
     flex-shrink: 0;
+    overflow: hidden;
+}
+.navbar-brand .emblem img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .navbar-brand .brand-text { line-height: 1.2; }
 .navbar-brand .brand-text span:first-child {
@@ -492,18 +494,6 @@ tr:hover td { background: var(--sky); }
     margin-bottom: 20px;
 }
 .filter-bar select, .filter-bar input { padding: 8px 12px; font-size: 0.88rem; flex: 1; min-width: 140px; max-width: 180px; }
-
-/* ─── Language Switcher ─────────────────────────────────────── */
-.lang-switcher {
-    display: flex; background: rgba(255,255,255,0.12);
-    border-radius: 30px; padding: 3px; gap: 2px;
-}
-.lang-btn {
-    padding: 4px 12px; border-radius: 30px; border: none;
-    font-size: 0.8rem; font-weight: 600; cursor: pointer;
-    color: rgba(255,255,255,0.7); background: transparent; transition: var(--transition);
-}
-.lang-btn.active { background: var(--amber); color: var(--navy); }
 
 /* ─── Empty State ───────────────────────────────────────────── */
 .empty-state { text-align: center; padding: 60px 20px; }

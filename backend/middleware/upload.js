@@ -44,4 +44,21 @@ const upload = multer({
     }
 });
 
+// Profile photo upload (separate filename pattern, 2MB limit)
+const profileStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => {
+        const userId = req.user ? req.user.id : 'unknown';
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `profile-${userId}-${Date.now()}${ext}`);
+    }
+});
+
+const profileUpload = multer({
+    storage: profileStorage,
+    fileFilter,
+    limits: { fileSize: 2 * 1024 * 1024 }
+});
+
 module.exports = upload;
+module.exports.profileUpload = profileUpload;

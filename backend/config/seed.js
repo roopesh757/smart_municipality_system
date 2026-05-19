@@ -3,19 +3,11 @@ const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
 const DEFAULT_ADMIN = {
-    username: 'admin_mumbai',
+    username: 'admin_udupi',
     email: 'admin@municipality.com',
     password: 'Admin@123',
-    city: 'Mumbai',
+    city: 'Udupi',
     role: 'admin'
-};
-
-const DEFAULT_SUPERADMIN = {
-    username: 'superadmin',
-    email: 'superadmin@municipality.com',
-    password: 'Admin@123',
-    city: 'Mumbai',
-    role: 'superadmin'
 };
 
 async function seedAdmin(admin) {
@@ -50,7 +42,6 @@ async function seedAdmin(admin) {
 async function seedDefaults() {
     try {
         await seedAdmin(DEFAULT_ADMIN);
-        await seedAdmin(DEFAULT_SUPERADMIN);
         console.log('🌱 Database seeding complete');
     } catch (error) {
         console.error('❌ Seeding error:', error.message);

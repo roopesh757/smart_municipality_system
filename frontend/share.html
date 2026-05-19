@@ -11,7 +11,7 @@
 <nav class="navbar">
     <div class="navbar-inner">
         <div class="navbar-brand">
-            <div class="emblem">M</div>
+            <div class="emblem"><img src="images/municipality-logo.png" alt="Municipality Logo"></div>
             <div class="brand-text">
                 <span>Municipality Portal</span>
                 <span>Shared Complaint View</span>
@@ -33,7 +33,6 @@
 <footer><p>© 2024 Smart Municipality Portal</p></footer>
 
 <div id="toast-container" class="toast-container"></div>
-<script src="js/translations.js"></script>
 <script src="js/api.js"></script>
 <script>
     const token = new URLSearchParams(window.location.search).get('token');
@@ -57,7 +56,7 @@
                 container.innerHTML = `
                     <div style="margin-bottom:16px;">
                         <div class="breadcrumb">
-                            <a href="index.html">Home</a> <span>›</span> <span>Shared Complaint #${c.id}</span>
+                            <a href="index.html">Home</a> <span>›</span> <span>Shared Complaint</span>
                         </div>
                         <h2>Shared Complaint Report</h2>
                         <p style="font-size:0.88rem;color:var(--text-light);">This complaint has been publicly shared by the citizen.</p>
@@ -71,7 +70,7 @@
                         <div style="background:var(--off-white);border-radius:var(--radius);padding:16px;margin-bottom:20px;font-size:0.92rem;color:var(--text-mid);">${c.description}</div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.88rem;margin-bottom:20px;">
                             <div><div style="color:var(--text-light);">📍 Location</div><strong>${c.location}</strong></div>
-                            <div><div style="color:var(--text-light);">🏘️ Ward</div><strong>${c.ward}</strong></div>
+                            <div><div style="color:var(--text-light);">🏘️ Area</div><strong>${c.area}</strong></div>
                             <div><div style="color:var(--text-light);">🏙️ City</div><strong>${c.city}</strong></div>
                             <div><div style="color:var(--text-light);">📅 Submitted</div><strong>${formatDateTime(c.created_at)}</strong></div>
                             <div><div style="color:var(--text-light);">🔄 Attempts</div><strong>${c.attempt_count}/2</strong></div>

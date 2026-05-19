@@ -12,31 +12,28 @@
 <nav class="navbar">
     <div class="navbar-inner">
         <div class="navbar-brand">
-            <div class="emblem">M</div>
+            <div class="emblem"><img src="images/municipality-logo.png" alt="Municipality Logo"></div>
             <div class="brand-text">
                 <span>Municipality Portal</span>
                 <span id="nav-city">Citizen Dashboard</span>
             </div>
         </div>
         <div class="navbar-links">
-            <div class="lang-switcher">
-                <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
-                <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">हिं</button>
-            </div>
+
             <div class="notif-bell" id="notif-bell" onclick="toggleNotifications()">
                 🔔
                 <span class="notif-count" id="notif-count" style="display:none;">0</span>
                 <!-- Notifications Dropdown -->
                 <div class="notif-dropdown" id="notif-dropdown">
                     <div class="notif-header">
-                        <strong data-t="notifications">Notifications</strong>
-                        <button onclick="markAllRead(event)" style="background:none;border:none;font-size:0.8rem;color:var(--blue);cursor:pointer;" data-t="mark_all_read">Mark all read</button>
+                        <strong>Notifications</strong>
+                        <button onclick="markAllRead(event)" style="background:none;border:none;font-size:0.8rem;color:var(--blue);cursor:pointer;">Mark all read</button>
                     </div>
-                    <div id="notif-list"><div style="padding:20px;text-align:center;color:var(--text-light);font-size:0.88rem;" data-t="no_notifications">No notifications</div></div>
+                    <div id="notif-list"><div style="padding:20px;text-align:center;color:var(--text-light);font-size:0.88rem;">No notifications</div></div>
                 </div>
             </div>
             <span id="nav-username" class="hide-mobile" style="color:rgba(255,255,255,0.85);font-size:0.88rem;"></span>
-            <button onclick="Auth.logout()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.8);border-color:rgba(255,255,255,0.3);" data-t="logout">Logout</button>
+            <button onclick="Auth.logout()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.8);border-color:rgba(255,255,255,0.3);">Logout</button>
         </div>
     </div>
 </nav>
@@ -44,27 +41,28 @@
 <div class="dashboard-layout">
     <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="sidebar-user">
+        <div class="sidebar-user" style="position:relative;">
             <div class="sidebar-avatar" id="sidebar-avatar">R</div>
             <div class="sidebar-user-name" id="sidebar-name">Loading...</div>
             <div class="sidebar-user-role">🏙️ <span id="sidebar-city">—</span></div>
+            <button onclick="event.stopPropagation();showSection('profile', null)" style="position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.7)'" title="Edit Profile">✏️</button>
         </div>
         <nav class="sidebar-nav">
             <a href="#" class="active" onclick="showSection('overview',this)">
                 <span class="nav-icon">📊</span> Overview
             </a>
             <a href="#" onclick="showSection('my-complaints',this)">
-                <span class="nav-icon">📋</span> <span data-t="my_complaints">My Complaints</span>
+                <span class="nav-icon">📋</span> <span>My Complaints</span>
             </a>
             <a href="#" onclick="showSection('new-complaint',this)">
-                <span class="nav-icon">➕</span> <span data-t="new_complaint">New Complaint</span>
+                <span class="nav-icon">➕</span> <span>New Complaint</span>
             </a>
             <div class="sidebar-divider"></div>
             <a href="#" onclick="openModal('delete-account-modal');return false;" style="color:#ef4444;">
                 <span class="nav-icon">⚠️</span> <span>Delete Account</span>
             </a>
             <a href="login.html" onclick="Auth.logout();return false;">
-                <span class="nav-icon">🚪</span> <span data-t="logout">Logout</span>
+                <span class="nav-icon">🚪</span> <span>Logout</span>
             </a>
         </nav>
     </aside>
@@ -117,7 +115,7 @@
         <section id="section-my-complaints" style="display:none;">
             <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
                 <div>
-                    <h2 data-t="my_complaints">My Complaints</h2>
+                    <h2>My Complaints</h2>
                     <p>Track all your reported issues and their current status.</p>
                 </div>
                 <button class="btn btn-primary" onclick="showSection('new-complaint', document.querySelector('.sidebar-nav a:nth-child(3)'))">
@@ -146,7 +144,7 @@
         <section id="section-new-complaint" style="display:none;">
             <div class="page-header">
                 <h2>Submit New Complaint</h2>
-                <p>Report a civic issue in your area. Please provide as much detail as possible.</p>
+                <p>Report a civic issue in any area. Select the location to route it to the correct municipality.</p>
             </div>
 
             <div class="card">
@@ -173,11 +171,7 @@
                             <textarea id="c-desc" class="form-control" rows="4" placeholder="Describe the problem in detail..." required maxlength="1000"></textarea>
                             <div class="form-error" id="desc-error"></div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Location / Address <span class="required">*</span></label>
-                            <input type="text" id="c-location" class="form-control" placeholder="Street name, landmark..." required>
-                            <div class="form-error" id="location-error"></div>
-                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Priority Level <span class="required">*</span></label>
                             <select id="c-priority" class="form-control" required>
@@ -189,6 +183,45 @@
                         </div>
                     </div>
 
+                    <!-- Complaint Location -->
+                    <div style="background:var(--off-white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+                            <div style="font-weight:600;font-size:0.9rem;color:var(--navy);">📍 Complaint Location</div>
+                            <div id="municipality-routing-badge" style="display:none;"></div>
+                        </div>
+                        <div id="cross-municipality-hint" style="display:none;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:0.84rem;color:#1e40af;">
+                            🌍 <strong>Reporting from a different area?</strong> No problem! Change the location below to route this complaint to the correct municipality. Travelers, students, and visitors can report issues anywhere.
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">State <span class="required">*</span></label>
+                                <select id="c-state" class="form-control" onchange="onComplaintStateChange()" disabled>
+                                    <option value="">Loading...</option>
+                                </select>
+                                <div class="form-error" id="state-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">City / Municipality <span class="required">*</span></label>
+                                <select id="c-district" class="form-control" onchange="onComplaintCityChange()" disabled>
+                                    <option value="">Select state first</option>
+                                </select>
+                                <div class="form-error" id="district-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Area / Locality <span class="required">*</span></label>
+                                <select id="c-area" class="form-control" onchange="onComplaintAreaChange()" disabled>
+                                    <option value="">Select city first</option>
+                                </select>
+                                <div class="form-error" id="area-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Street / Landmark <span style="color:var(--text-light);font-weight:400;">(Optional)</span></label>
+                                <input type="text" id="c-location" class="form-control" placeholder="e.g. Near Bus Stand, MG Road...">
+                                <div class="form-error" id="location-error"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Image Upload -->
                     <div class="form-group">
                         <label class="form-label">Photo Evidence (Optional)</label>
@@ -196,7 +229,7 @@
                             <input type="file" id="c-image" name="image" accept="image/*" style="display:none" onchange="previewImage(event)">
                             <div id="upload-placeholder">
                                 <div class="file-upload-icon">📷</div>
-                                <div class="file-upload-text"><strong>Click to upload</strong> or drag & drop</div>
+                                <div class="file-upload-text"><strong>Click to upload</strong> or drag &amp; drop</div>
                                 <div style="font-size:0.78rem;color:var(--text-light);margin-top:4px;">JPG, PNG, GIF up to 5MB</div>
                             </div>
                             <div id="image-preview" style="display:none;"></div>
@@ -212,6 +245,87 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </section>
+
+        <!-- ── Profile Section ─────────────────────────────── -->
+        <section id="section-profile" style="display:none;">
+            <div class="page-header">
+                <h2>My Profile</h2>
+                <p>Manage your account details and preferences.</p>
+            </div>
+
+            <!-- Profile Header Card -->
+            <div class="card" style="margin-bottom:20px;">
+                <div style="display:flex;align-items:center;gap:20px;padding:8px;">
+                    <div style="position:relative;">
+                        <div id="profile-avatar-large" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:2rem;color:white;font-weight:700;overflow:hidden;">C</div>
+                        <button type="button" onclick="document.getElementById('photo-input').click()" style="position:absolute;bottom:-2px;right:-2px;width:28px;height:28px;border-radius:50%;background:var(--navy);color:white;border:2px solid white;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Change Photo">📷</button>
+                        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
+                    </div>
+                    <div>
+                        <div id="profile-display-name" style="font-size:1.1rem;font-weight:700;color:var(--navy);">Citizen</div>
+                        <div id="profile-display-email" style="font-size:0.88rem;color:var(--text-light);">email</div>
+                        <div id="profile-display-city" style="font-size:0.82rem;color:var(--text-mid);margin-top:2px;">🏙️ City</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile + Change Password Grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="overview-grids">
+                <div class="card">
+                    <div class="card-header"><h3>Edit Profile</h3></div>
+                    <form id="profile-form" onsubmit="saveProfile(event)" style="padding:0 4px;">
+                        <div class="form-group">
+                            <label class="form-label">Full Name <span class="required">*</span></label>
+                            <input type="text" id="p-name" class="form-control" required maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email <span style="color:var(--text-light);font-weight:400;">(cannot be changed)</span></label>
+                            <input type="email" id="p-email" class="form-control" disabled style="background:var(--off-white);cursor:not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Mobile Number</label>
+                            <input type="text" id="p-mobile" class="form-control" maxlength="10" placeholder="10-digit mobile number">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">State <span style="color:var(--text-light);font-weight:400;">(read-only)</span></label>
+                            <input type="text" id="p-state" class="form-control" disabled style="background:var(--off-white);cursor:not-allowed;">
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">City / Municipality</label>
+                                <input type="text" id="p-city" class="form-control" disabled style="background:var(--off-white);cursor:not-allowed;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Area</label>
+                                <input type="text" id="p-area" class="form-control" disabled style="background:var(--off-white);cursor:not-allowed;">
+                            </div>
+                        </div>
+                        <div class="form-error" id="profile-form-error"></div>
+                        <button type="submit" class="btn btn-primary" id="save-profile-btn" style="margin-top:8px;">Save Changes</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3>🔒 Change Password</h3></div>
+                    <form id="password-form" onsubmit="changePasswordSubmit(event)" style="padding:0 4px;">
+                        <div class="form-group">
+                            <label class="form-label">Current Password <span class="required">*</span></label>
+                            <input type="password" id="pw-current" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New Password <span class="required">*</span></label>
+                            <input type="password" id="pw-new" class="form-control" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password <span class="required">*</span></label>
+                            <input type="password" id="pw-confirm" class="form-control" required>
+                        </div>
+                        <div class="form-error" id="password-form-error"></div>
+                        <button type="submit" class="btn btn-primary" id="change-pw-btn" style="margin-top:8px;">Change Password</button>
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -275,9 +389,21 @@
     </div>
 </div>
 
+<!-- Matching Complaint Modal -->
+<div class="modal-overlay" id="match-modal">
+    <div class="modal" style="max-width:600px;">
+        <div class="modal-header">
+            <h3>🔍 Similar Complaint Found</h3>
+            <button class="modal-close" onclick="closeModal('match-modal')">×</button>
+        </div>
+        <div class="modal-body" id="match-modal-body">Loading...</div>
+        <div class="modal-footer" id="match-modal-footer"></div>
+    </div>
+</div>
+
 <div id="toast-container" class="toast-container"></div>
 
-<script src="js/translations.js"></script>
+
 <script src="js/api.js"></script>
 <script>
 // ─── Auth Guard ───────────────────────────────────────────────
@@ -288,7 +414,7 @@ if (user) {
     document.getElementById('nav-username').textContent = user.username;
     document.getElementById('nav-city').textContent = `${user.city} — Citizen`;
     document.getElementById('sidebar-name').textContent = user.username;
-    document.getElementById('sidebar-city').textContent = `${user.city} · ${user.ward}`;
+    document.getElementById('sidebar-city').textContent = user.city;
     document.getElementById('sidebar-avatar').textContent = user.username[0].toUpperCase();
     document.getElementById('welcome-name').textContent = user.username.split(' ')[0];
 }
@@ -301,7 +427,8 @@ function showSection(name, linkEl) {
     if (linkEl) linkEl.classList.add('active');
     if (name === 'my-complaints') loadMyComplaints();
     if (name === 'overview') loadOverview();
-    if (name === 'new-complaint') renderProblemTypes();
+    if (name === 'new-complaint') { renderProblemTypes(); initComplaintLocationDropdowns(); }
+    if (name === 'profile') loadProfile();
 }
 
 // ─── Problem Types Grid ───────────────────────────────────────
@@ -375,44 +502,197 @@ function resetComplaintForm() {
     document.getElementById('selected-problem-type').value = '';
     removeImage();
     document.getElementById('complaint-form-error').textContent = '';
+    // Reset location dropdowns
+    const stateSel    = document.getElementById('c-state');
+    const districtSel = document.getElementById('c-district');
+    const areaSel     = document.getElementById('c-area');
+    stateSel.value = '';
+    districtSel.innerHTML = '<option value="">Select state first</option>';
+    districtSel.disabled  = true;
+    areaSel.innerHTML     = '<option value="">Select city first</option>';
+    areaSel.disabled      = true;
+    ['state-error','district-error','area-error','location-error'].forEach(id => document.getElementById(id).textContent = '');
+    // Reset municipality routing badge & hint
+    document.getElementById('municipality-routing-badge').style.display = 'none';
+    document.getElementById('cross-municipality-hint').style.display = 'none';
+    // Re-select user's home location as default
+    initComplaintLocationDropdowns();
 }
 
-// ─── Submit Complaint ─────────────────────────────────────────
+// ─── Complaint Location Dropdowns ────────────────────────────
+let locData = null;
+
+async function initComplaintLocationDropdowns() {
+    if (!locData) {
+        try {
+            const res = await fetch('data/locations.json');
+            locData = await res.json();
+        } catch { return; }
+    }
+    const stateSel = document.getElementById('c-state');
+    stateSel.disabled = false;
+    // Populate states if not already done
+    if (stateSel.options.length <= 1 || stateSel.options[0].textContent === 'Loading...') {
+        stateSel.innerHTML = '<option value="">— Select State —</option>' +
+            locData.states.map(s => `<option value="${s.state}">${s.state}</option>`).join('');
+    }
+
+    // Auto-select user's home location as default if form is fresh
+    if (user && !stateSel.value) {
+        const homeState = user.state || '';
+        const homeCity  = user.city  || '';
+        const homeArea  = user.area  || '';
+
+        if (homeState) {
+            stateSel.value = homeState;
+            onComplaintStateChange();
+
+            if (homeCity) {
+                document.getElementById('c-district').value = homeCity;
+                onComplaintCityChange();
+
+                if (homeArea) {
+                    document.getElementById('c-area').value = homeArea;
+                }
+            }
+        }
+        updateMunicipalityBadge();
+    }
+}
+
+function onComplaintStateChange() {
+    const state   = document.getElementById('c-state').value;
+    const citySel = document.getElementById('c-district');
+    const areaSel = document.getElementById('c-area');
+
+    // Reset downstream
+    citySel.innerHTML = '<option value="">— Select City —</option>';
+    citySel.disabled  = !state;
+    areaSel.innerHTML = '<option value="">Select city first</option>';
+    areaSel.disabled  = true;
+
+    if (!state || !locData) { updateMunicipalityBadge(); return; }
+
+    const stateObj = locData.states.find(s => s.state === state);
+    if (!stateObj) return;
+    stateObj.municipalities.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.city;
+        opt.textContent = m.city;
+        citySel.appendChild(opt);
+    });
+    document.getElementById('state-error').textContent = '';
+    updateMunicipalityBadge();
+}
+
+function onComplaintCityChange() {
+    const state   = document.getElementById('c-state').value;
+    const city    = document.getElementById('c-district').value;
+    const areaSel = document.getElementById('c-area');
+    areaSel.innerHTML = '<option value="">— Select Area —</option>';
+    areaSel.disabled  = !city;
+    if (!city || !state || !locData) return;
+    const stateObj = locData.states.find(s => s.state === state);
+    if (!stateObj) return;
+    const muni = stateObj.municipalities.find(m => m.city === city);
+    if (!muni) return;
+    muni.areas.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        areaSel.appendChild(opt);
+    });
+    document.getElementById('district-error').textContent = '';
+    updateMunicipalityBadge();
+}
+
+function onComplaintAreaChange() {
+    document.getElementById('area-error').textContent = '';
+    updateMunicipalityBadge();
+}
+
+// Show which municipality the complaint will be routed to
+function updateMunicipalityBadge() {
+    const district = document.getElementById('c-district').value;
+    const badge = document.getElementById('municipality-routing-badge');
+    const hint  = document.getElementById('cross-municipality-hint');
+    const homeCity = user ? user.city : '';
+
+    if (!district) {
+        badge.style.display = 'none';
+        hint.style.display = 'none';
+        return;
+    }
+
+    const isCross = homeCity && district !== homeCity;
+    badge.style.display = 'inline-flex';
+    badge.style.cssText = `display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:0.82rem;font-weight:600;${
+        isCross
+            ? 'background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border:1px solid #f59e0b;'
+            : 'background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46;border:1px solid #34d399;'
+    }`;
+    badge.innerHTML = isCross
+        ? `🌍 Routing to <strong>${district}</strong> municipality`
+        : `🏠 Your home municipality — <strong>${district}</strong>`;
+
+    hint.style.display = isCross ? 'block' : 'none';
+}
+
+// ─── Submit Complaint (with match check) ─────────────────────
 document.getElementById('complaint-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     document.getElementById('complaint-form-error').textContent = '';
 
     const problemType = document.getElementById('selected-problem-type').value;
-    const title = document.getElementById('c-title').value.trim();
+    const title       = document.getElementById('c-title').value.trim();
     const description = document.getElementById('c-desc').value.trim();
-    const location = document.getElementById('c-location').value.trim();
-    const priority = document.getElementById('c-priority').value;
+    const landmark    = document.getElementById('c-location').value.trim();
+    const priority    = document.getElementById('c-priority').value;
+    const selectedState = document.getElementById('c-state').value;
+    const district    = document.getElementById('c-district').value;
+    const area        = document.getElementById('c-area').value;
+    const location    = landmark ? `${landmark}, ${area}, ${district}` : `${area}, ${district}`;
 
     let valid = true;
     if (!problemType) { document.getElementById('ptype-error').textContent = 'Please select a problem type.'; valid = false; }
-    if (!title) { document.getElementById('title-error').textContent = 'Title is required.'; valid = false; }
+    if (!title)       { document.getElementById('title-error').textContent = 'Title is required.'; valid = false; }
     if (!description) { document.getElementById('desc-error').textContent = 'Description is required.'; valid = false; }
-    if (!location) { document.getElementById('location-error').textContent = 'Location is required.'; valid = false; }
+    if (!selectedState) { document.getElementById('state-error').textContent = 'Please select a state.'; valid = false; }
+    if (!district)    { document.getElementById('district-error').textContent = 'Please select a city.'; valid = false; }
+    if (!area)        { document.getElementById('area-error').textContent = 'Please select an area.'; valid = false; }
     if (!valid) return;
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('problem_type', problemType);
-    formData.append('location', location);
-    formData.append('priority', priority);
-    const imageFile = document.getElementById('c-image').files[0];
-    if (imageFile) formData.append('image', imageFile);
 
     const btn = document.getElementById('submit-btn');
     setLoading(btn, true);
+
     try {
-        const data = await API.postForm('/complaints', formData);
-        let msg = 'Complaint submitted! You will be notified of status updates.';
-        if (data.isDuplicate) msg += '\n⚠️ Note: A similar complaint already exists for this location.';
-        showToast('Complaint Submitted!', msg, 'success', 6000);
-        resetComplaintForm();
-        setTimeout(() => showSection('my-complaints', document.querySelector('.sidebar-nav a:nth-child(2)')), 1500);
+        // Step 1: Check for matching complaints
+        const matchData = await API.post('/complaints/check-match', {
+            problem_type: problemType,
+            complaint_district: district,
+            complaint_area: area,
+            complaint_state: selectedState
+        });
+
+        // Step 1a: Same-user already has an active complaint/join for this
+        if (matchData.userAlreadyActive) {
+            setLoading(btn, false);
+            showToast('Already Reported', matchData.message || 'You have already reported or joined this complaint previously.', 'warning', 6000);
+            document.getElementById('complaint-form-error').innerHTML =
+                `⚠️ ${matchData.message} <a href="#" style="color:var(--blue);text-decoration:underline;" onclick="event.preventDefault();viewComplaint(${matchData.existingComplaintId})">View your existing complaint</a>`;
+            return;
+        }
+
+        // Step 1b: Match found from another user — offer to join
+        if (matchData.matchFound && !matchData.alreadyJoined) {
+            // Show match modal instead of submitting
+            setLoading(btn, false);
+            showMatchModal(matchData.complaint, { title, description, problemType, location, priority, district, area });
+            return;
+        }
+
+        // Step 2: No match found (or already joined) — submit normally
+        await doSubmitComplaint({ title, description, problemType, location, priority, district, area });
     } catch (err) {
         document.getElementById('complaint-form-error').textContent = err.message || 'Failed to submit complaint.';
         showToast('Submission Failed', err.message, 'error');
@@ -420,6 +700,97 @@ document.getElementById('complaint-form').addEventListener('submit', async (e) =
         setLoading(btn, false);
     }
 });
+
+// Show the matching complaint modal
+function showMatchModal(match, formData) {
+    const body = document.getElementById('match-modal-body');
+    const impactLevel = match.supporter_count >= 10 ? '🔴 Very High' : match.supporter_count >= 5 ? '🟠 High' : match.supporter_count >= 1 ? '🟡 Moderate' : '🟢 New';
+    body.innerHTML = `
+        <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="font-weight:700;color:#1e40af;margin-bottom:6px;">⚠️ A similar complaint already exists in this area.</div>
+            <div style="font-size:0.88rem;color:#1e3a5f;">Instead of creating a duplicate, you can join the existing complaint to increase its visibility and priority.</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:16px;background:var(--off-white);">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:12px;">
+                <div>
+                    <div style="font-weight:700;font-size:1rem;color:var(--navy);">${match.title}</div>
+                    <div style="font-size:0.85rem;color:var(--text-light);margin-top:2px;">📂 ${match.problem_type}</div>
+                </div>
+                ${getStatusBadge(match.status)}
+            </div>
+            <div style="font-size:0.88rem;color:var(--text-mid);margin-bottom:12px;max-height:80px;overflow:hidden;">${match.description}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.82rem;color:var(--text-light);">
+                <span>📍 ${match.location || match.area}</span>
+                <span>🏙️ ${match.city}</span>
+                <span>📅 ${formatDate(match.created_at)}</span>
+                <span>👤 ${match.citizen_name}</span>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af;font-size:0.84rem;font-weight:600;">
+                    👥 ${match.supporter_count + 1} Affected Citizens
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;font-size:0.84rem;font-weight:600;">
+                    ${impactLevel} Public Impact
+                </div>
+            </div>
+        </div>
+    `;
+
+    const footer = document.getElementById('match-modal-footer');
+    footer.innerHTML = `
+        <button class="btn btn-outline" onclick="closeModal('match-modal')">Cancel</button>
+        <button class="btn btn-primary" id="join-match-btn" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">
+            🤝 Join Existing Complaint
+        </button>
+        <button class="btn btn-outline" id="submit-anyway-btn" style="color:var(--text-light);border-color:var(--border);">
+            Submit New Anyway
+        </button>
+    `;
+
+    document.getElementById('join-match-btn').onclick = async () => {
+        const btn = document.getElementById('join-match-btn');
+        setLoading(btn, true);
+        try {
+            await API.post(`/complaints/${match.id}/join`);
+            closeModal('match-modal');
+            showToast('Joined Successfully!', `You've joined the complaint. You'll receive status updates and notifications.`, 'success', 6000);
+            resetComplaintForm();
+            setTimeout(() => showSection('my-complaints', document.querySelector('.sidebar-nav a:nth-child(2)')), 1500);
+        } catch (err) {
+            showToast('Error', err.message || 'Failed to join complaint.', 'error');
+        } finally { setLoading(btn, false); }
+    };
+
+    document.getElementById('submit-anyway-btn').onclick = async () => {
+        closeModal('match-modal');
+        const btn = document.getElementById('submit-btn');
+        setLoading(btn, true);
+        try { await doSubmitComplaint(formData); }
+        catch (err) { showToast('Error', err.message, 'error'); }
+        finally { setLoading(btn, false); }
+    };
+
+    openModal('match-modal');
+}
+
+// Actual complaint submission
+async function doSubmitComplaint({ title, description, problemType, location, priority, district, area }) {
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('problem_type', problemType);
+    formData.append('location', location);
+    formData.append('priority', priority);
+    formData.append('complaint_district', district);
+    formData.append('complaint_area', area);
+    const imageFile = document.getElementById('c-image').files[0];
+    if (imageFile) formData.append('image', imageFile);
+
+    const data = await API.postForm('/complaints', formData);
+    showToast('Complaint Submitted!', `Complaint submitted to ${district} municipality!`, 'success', 6000);
+    resetComplaintForm();
+    setTimeout(() => showSection('my-complaints', document.querySelector('.sidebar-nav a:nth-child(2)')), 1500);
+}
 
 // ─── Load Overview ────────────────────────────────────────────
 async function loadOverview() {
@@ -488,12 +859,18 @@ async function loadMyComplaints() {
     }
 }
 
-function renderComplaintCard(c) {
+function renderComplaintCard(c, index) {
     const priorityColor = getPriorityColor(c.priority);
     const shareUrl = `${window.location.origin}/share.html?token=${c.share_token}`;
     const attemptInfo = c.attempt_count > 1 ? `<span>🔄 Attempt ${c.attempt_count}/2</span>` : '';
     const escalatedBadge = c.escalated ? `<span class="badge badge-duplicate">⚠️ Escalated</span>` : '';
-    const dupBadge = c.is_duplicate ? `<span class="badge badge-duplicate">⚡ Duplicate</span>` : '';
+    const joinedBadge = c.is_joined ? `<span class="badge" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af;font-size:0.75rem;">🤝 Joined</span>` : '';
+    const supporterBadge = c.supporter_count > 0 ? `<span class="badge" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46;font-size:0.75rem;">👥 ${c.supporter_count + 1} affected</span>` : '';
+    const homeCity = user ? user.city : '';
+    const isCross = homeCity && c.city && c.city !== homeCity;
+    const routingBadge = isCross
+        ? `<span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.75rem;">🌍 ${c.city}</span>`
+        : '';
 
     return `
         <div class="complaint-card">
@@ -507,15 +884,16 @@ function renderComplaintCard(c) {
                     <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
                         ${getStatusBadge(c.status)}
                         ${getPriorityBadge(c.priority)}
-                        ${dupBadge}${escalatedBadge}
+                        ${joinedBadge}${supporterBadge}${escalatedBadge}${routingBadge}
                     </div>
                 </div>
                 <div class="complaint-meta">
                     <span>📍 ${c.location}</span>
-                    <span>🏘️ ${c.ward}</span>
+                    <span>🏘️ ${c.area}</span>
+                    <span>🏙️ ${c.city}</span>
                     <span>📅 ${formatDate(c.created_at)}</span>
                     ${attemptInfo}
-                    <span>#${c.id}</span>
+                    <span>${index + 1}</span>
                 </div>
                 ${c.escalated ? `
                     <div class="escalation-banner" style="margin-top:10px;">
@@ -525,9 +903,18 @@ function renderComplaintCard(c) {
             </div>
             <div class="complaint-actions" style="flex-direction:column;gap:6px;">
                 <button class="btn btn-outline btn-sm" onclick="viewComplaint(${c.id})">View</button>
-                <button class="btn btn-sm" style="background:var(--sky);color:var(--blue);border:1px solid var(--border);" onclick="shareComplaint('${shareUrl}')">📤</button>
-                ${c.status === 'Rejected' && c.attempt_count < 2 ? `<button class="btn btn-amber btn-sm" onclick="reattemptComplaint(${c.id})">↩</button>` : ''}
-                <button class="btn btn-danger btn-sm" onclick="confirmDelete(${c.id})">🗑</button>
+                ${c.status === 'Solved' ? `
+                    <button class="btn btn-sm" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46;border:1px solid #6ee7b7;font-weight:600;" onclick="acknowledgeComplaint(${c.id})">OK ✅</button>
+                ` : c.status === 'Rejected' ? `
+                    <span style="font-size:0.75rem;color:var(--text-light);text-align:center;padding:4px;">🔒 Closed</span>
+                    ${!c.is_joined && c.attempt_count < 2 ? `<button class="btn btn-amber btn-sm" onclick="reattemptComplaint(${c.id})">↩</button>` : ''}
+                ` : `
+                    ${!c.is_joined ? `<button class="btn btn-sm" style="background:var(--sky);color:var(--blue);border:1px solid var(--border);" onclick="shareComplaint('${shareUrl}')">📤</button>` : ''}
+                    ${c.is_joined
+                        ? `<button class="btn btn-sm" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;" onclick="leaveComplaint(${c.id})">Leave</button>`
+                        : `<button class="btn btn-danger btn-sm" onclick="confirmDelete(${c.id})">🗑</button>`
+                    }
+                `}
             </div>
         </div>
     `;
@@ -542,41 +929,65 @@ async function viewComplaint(id) {
         const data = await API.get(`/complaints/${id}`);
         const c = data.complaint;
         const shareUrl = `${window.location.origin}/share.html?token=${c.share_token}`;
+        const impactLevel = c.supporter_count >= 10 ? '🔴 Very High' : c.supporter_count >= 5 ? '🟠 High' : c.supporter_count >= 1 ? '🟡 Moderate' : '';
 
         document.getElementById('detail-modal-body').innerHTML = `
             <div style="display:grid;gap:16px;">
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     ${getStatusBadge(c.status)} ${getPriorityBadge(c.priority)}
-                    ${c.is_duplicate ? '<span class="badge badge-duplicate">⚡ Duplicate</span>' : ''}
+                    ${c.is_joined ? '<span class="badge" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af;">🤝 Joined</span>' : ''}
                     ${c.escalated ? '<span class="badge" style="background:#fff7ed;color:#f97316;">⚠️ Escalated</span>' : ''}
                 </div>
+                ${['Solved', 'Rejected'].includes(c.status) ? `
+                <div style="background:${c.status === 'Solved' ? 'linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac' : 'linear-gradient(135deg,#fef2f2,#fecaca);border:1px solid #fca5a5'};border-radius:var(--radius);padding:14px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:700;color:${c.status === 'Solved' ? '#166534' : '#991b1b'};">${c.status === 'Solved' ? '✅ Complaint Resolved' : '❌ Complaint Rejected'}</div>
+                    <div style="font-size:0.84rem;color:${c.status === 'Solved' ? '#15803d' : '#b91c1c'};margin-top:4px;">This complaint is closed. No further modifications are allowed.</div>
+                    ${c.resolved_at ? `<div style="font-size:0.8rem;color:var(--text-light);margin-top:6px;">Closed on ${formatDateTime(c.resolved_at)}</div>` : ''}
+                </div>` : ''}
                 <div>
                     <h3 style="margin-bottom:4px;">${c.title}</h3>
                     <div style="color:var(--text-light);font-size:0.88rem;">📂 ${c.problem_type}</div>
                 </div>
                 <div style="background:var(--off-white);border-radius:var(--radius);padding:14px;font-size:0.9rem;color:var(--text-mid);">${c.description}</div>
+                ${c.supporter_count > 0 ? `
+                <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                    <div style="font-size:1.5rem;font-weight:700;color:#1e40af;">👥 ${c.supporter_count + 1}</div>
+                    <div>
+                        <div style="font-weight:600;color:#1e40af;">Affected Citizens</div>
+                        <div style="font-size:0.82rem;color:#3b82f6;">${impactLevel} Public Impact · ${c.supporter_count} supporters joined</div>
+                    </div>
+                </div>` : ''}
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.88rem;">
                     <div><span style="color:var(--text-light);">📍 Location</span><br><strong>${c.location}</strong></div>
-                    <div><span style="color:var(--text-light);">🏘️ Ward</span><br><strong>${c.ward}</strong></div>
+                    <div><span style="color:var(--text-light);">🏘️ Area</span><br><strong>${c.area}</strong></div>
+                    <div><span style="color:var(--text-light);">🏙️ Municipality</span><br><strong>${c.city}</strong>${(user && c.city !== user.city) ? ' <span style="color:#f59e0b;font-size:0.78rem;">🌍 Cross-area</span>' : ''}</div>
                     <div><span style="color:var(--text-light);">📅 Submitted</span><br><strong>${formatDateTime(c.created_at)}</strong></div>
                     <div><span style="color:var(--text-light);">🔄 Attempts</span><br><strong>${c.attempt_count} / 2</strong></div>
                     ${c.resolved_at ? `<div><span style="color:var(--text-light);">✅ Resolved</span><br><strong>${formatDateTime(c.resolved_at)}</strong></div>` : ''}
                 </div>
                 ${c.image_path ? `<img src="http://localhost:5000/uploads/${c.image_path}" alt="Complaint Image" style="border-radius:var(--radius);max-height:300px;object-fit:cover;width:100%;">` : ''}
                 ${c.admin_notes ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--radius);padding:12px;"><strong>Admin Note:</strong><br>${c.admin_notes}</div>` : ''}
-                <div>
+                ${!c.is_joined && !['Solved', 'Rejected'].includes(c.status) ? `<div>
                     <label class="form-label">Share this complaint</label>
                     <div class="share-link-box">
                         <input type="text" value="${shareUrl}" readonly id="share-input-${c.id}">
                         <button class="btn btn-primary copy-btn btn-sm" onclick="copyToClipboard('${shareUrl}', this)">Copy</button>
                     </div>
-                </div>
+                </div>` : ''}
             </div>
         `;
 
         const footer = document.getElementById('detail-modal-footer');
         footer.innerHTML = '';
-        if (c.status === 'Rejected' && c.attempt_count < 2) {
+        if (c.status === 'Solved') {
+            const ackBtn = document.createElement('button');
+            ackBtn.className = 'btn';
+            ackBtn.style.cssText = 'background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46;border:1px solid #6ee7b7;font-weight:600;';
+            ackBtn.textContent = '✅ Acknowledge & Remove';
+            ackBtn.onclick = async () => { closeModal('detail-modal'); await acknowledgeComplaint(id); };
+            footer.appendChild(ackBtn);
+        }
+        if (!c.is_joined && c.status === 'Rejected' && c.attempt_count < 2) {
             const btn = document.createElement('button');
             btn.className = 'btn btn-amber';
             btn.textContent = `↩ Re-attempt (${c.attempt_count}/2 used)`;
@@ -624,6 +1035,32 @@ async function reattemptComplaint(id) {
         loadMyComplaints();
     } catch (err) {
         showToast('Error', err.message, 'error');
+    }
+}
+
+// ─── Leave Joined Complaint ──────────────────────────────────
+async function leaveComplaint(id) {
+    if (!confirm('Are you sure you want to leave this complaint? You will no longer receive updates.')) return;
+    try {
+        await API.post(`/complaints/${id}/leave`);
+        showToast('Left Complaint', 'You have left this complaint and will no longer receive updates.', 'success');
+        loadMyComplaints();
+        loadOverview();
+    } catch (err) {
+        showToast('Error', err.message || 'Failed to leave complaint.', 'error');
+    }
+}
+
+// ─── Acknowledge Solved Complaint ─────────────────────────────
+async function acknowledgeComplaint(id) {
+    if (!confirm('This complaint has been resolved. Click OK to confirm and remove it from your dashboard.')) return;
+    try {
+        await API.post(`/complaints/${id}/acknowledge`);
+        showToast('Complaint Acknowledged', 'The resolved complaint has been removed from your dashboard. You can report again if the issue recurs.', 'success', 6000);
+        loadMyComplaints();
+        loadOverview();
+    } catch (err) {
+        showToast('Error', err.message || 'Failed to acknowledge complaint.', 'error');
     }
 }
 
@@ -704,6 +1141,114 @@ async function deleteMyAccount() {
         setLoading(btn, false);
     }
 }
+
+// ─── Profile Management ───────────────────────────────────────
+async function loadProfile() {
+    try {
+        const data = await API.get('/auth/me');
+        const p = data.user;
+        document.getElementById('p-name').value = p.username || '';
+        document.getElementById('p-email').value = p.email || '';
+        document.getElementById('p-mobile').value = p.mobile || '';
+        document.getElementById('p-city').value = p.city || '';
+        document.getElementById('p-area').value = p.area || '';
+        document.getElementById('p-state').value = p.state || '';
+        document.getElementById('profile-display-name').textContent = p.username;
+        document.getElementById('profile-display-email').textContent = p.email;
+        document.getElementById('profile-display-city').textContent = `🏙️ ${p.city} — ${p.area}`;
+        // Avatar
+        const avatarEl = document.getElementById('profile-avatar-large');
+        if (p.profile_photo) {
+            avatarEl.innerHTML = `<img src="http://localhost:5000/uploads/${p.profile_photo}" style="width:100%;height:100%;object-fit:cover;">`;
+            document.getElementById('sidebar-avatar').innerHTML = `<img src="http://localhost:5000/uploads/${p.profile_photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            // Store for future page loads
+            const u = Auth.getUser(); u.profile_photo = p.profile_photo; Storage.set('user', u);
+        } else {
+            avatarEl.textContent = (p.username || 'C')[0].toUpperCase();
+        }
+        document.getElementById('profile-form-error').textContent = '';
+        document.getElementById('password-form-error').textContent = '';
+    } catch (err) {
+        console.error('Load profile error:', err);
+    }
+}
+
+async function saveProfile(e) {
+    e.preventDefault();
+    const btn = document.getElementById('save-profile-btn');
+    const errorEl = document.getElementById('profile-form-error');
+    errorEl.textContent = '';
+    const username = document.getElementById('p-name').value.trim();
+    const mobile = document.getElementById('p-mobile').value.trim();
+    if (!username) { errorEl.textContent = 'Name is required.'; return; }
+    if (mobile && !/^[0-9]{10}$/.test(mobile)) { errorEl.textContent = 'Mobile must be 10 digits.'; return; }
+    setLoading(btn, true);
+    try {
+        const data = await API.put('/auth/profile', { username, mobile });
+        showToast('Profile Updated', data.message, 'success');
+        // Update localStorage and displayed names
+        const u = Auth.getUser();
+        u.username = data.user.username;
+        Storage.set('user', u);
+        document.getElementById('nav-username').textContent = data.user.username;
+        document.getElementById('sidebar-name').textContent = data.user.username;
+        document.getElementById('welcome-name').textContent = data.user.username.split(' ')[0];
+        document.getElementById('profile-display-name').textContent = data.user.username;
+    } catch (err) {
+        errorEl.textContent = err.message || 'Failed to update profile.';
+    } finally { setLoading(btn, false); }
+}
+
+async function changePasswordSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('change-pw-btn');
+    const errorEl = document.getElementById('password-form-error');
+    errorEl.textContent = '';
+    const currentPassword = document.getElementById('pw-current').value;
+    const newPassword = document.getElementById('pw-new').value;
+    const confirmPassword = document.getElementById('pw-confirm').value;
+    if (!currentPassword || !newPassword) { errorEl.textContent = 'All fields are required.'; return; }
+    if (newPassword.length < 6) { errorEl.textContent = 'New password must be at least 6 characters.'; return; }
+    if (newPassword !== confirmPassword) { errorEl.textContent = 'Passwords do not match.'; return; }
+    setLoading(btn, true);
+    try {
+        const data = await API.put('/auth/password', { currentPassword, newPassword });
+        showToast('Password Changed', data.message, 'success');
+        document.getElementById('pw-current').value = '';
+        document.getElementById('pw-new').value = '';
+        document.getElementById('pw-confirm').value = '';
+    } catch (err) {
+        errorEl.textContent = err.message || 'Failed to change password.';
+    } finally { setLoading(btn, false); }
+}
+
+async function uploadPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast('Error', 'Photo must be under 2MB.', 'error'); return; }
+    const fd = new FormData();
+    fd.append('photo', file);
+    try {
+        const data = await API.postForm('/auth/profile-photo', fd);
+        showToast('Photo Updated', data.message, 'success');
+        const photoUrl = `http://localhost:5000/uploads/${data.profile_photo}`;
+        document.getElementById('profile-avatar-large').innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+        document.getElementById('sidebar-avatar').innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        const u = Auth.getUser(); u.profile_photo = data.profile_photo; Storage.set('user', u);
+    } catch (err) {
+        showToast('Error', err.message || 'Failed to upload photo.', 'error');
+    }
+    e.target.value = '';
+}
+
+// Load profile photo on init if stored
+(function initAvatar() {
+    const u = Auth.getUser();
+    if (u && u.profile_photo) {
+        const url = `http://localhost:5000/uploads/${u.profile_photo}`;
+        document.getElementById('sidebar-avatar').innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    }
+})();
 
 // ─── Init ─────────────────────────────────────────────────────
 loadOverview();
